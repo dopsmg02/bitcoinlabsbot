@@ -12,6 +12,8 @@ router.post('/request', authenticateJWT, requireNotBanned, validateAdRequest, re
 
 // S2S Webhook called by the Ad Network (Monetag/AdsGram) AFTER the user finishes the ad.
 // NOT PROTECTED BY JWT. Protected by HMAC signature.
+router.get('/callback', adNetworkCallback);
+
 // [DEV ONLY] Helper to simulate ad network callbacks from the frontend
 if (process.env.NODE_ENV !== 'production') {
     router.get('/dev-callback', (req: Request, res: Response) => {
