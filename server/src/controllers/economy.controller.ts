@@ -31,7 +31,7 @@ export const convertGoldToMax = async (req: Request, res: Response): Promise<voi
         }
 
         // [CRITICAL FIX C2/C5] All logic in transaction, response outside
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: any) => {
             const user = await tx.user.findUnique({
                 where: { id: userId },
                 select: { goldBalance: true }
@@ -102,7 +102,7 @@ export const requestWithdrawal = async (req: Request, res: Response): Promise<vo
         }
 
         // [CRITICAL FIX C5] All logic in transaction, response outside
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: any) => {
             const user = await tx.user.findUnique({
                 where: { id: userId },
                 select: { maxBalance: true, lastWithdrawAt: true }
@@ -189,7 +189,7 @@ export const upgradeMiner = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: any) => {
             const user = await tx.user.findUnique({
                 where: { id: userId },
                 select: { goldBalance: true, minerLevel: true }

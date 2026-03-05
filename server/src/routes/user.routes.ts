@@ -4,9 +4,6 @@ import { authenticateJWT } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// Protect ALL user routes
-router.use(authenticateJWT);
-
-router.get('/profile', getProfile);
+router.get('/profile', authenticateJWT, getProfile);
 
 export default router;

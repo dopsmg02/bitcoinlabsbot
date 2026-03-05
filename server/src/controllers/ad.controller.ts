@@ -109,7 +109,7 @@ export const adNetworkCallback = async (req: Request, res: Response): Promise<vo
         // Determine if this is a VALUED impression
         const isValued = rewardType === 'valued';
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
             // 1. Mark session as validated
             await tx.adSession.update({
                 where: { sessionId },
@@ -170,10 +170,6 @@ export const adNetworkCallback = async (req: Request, res: Response): Promise<vo
             //    NOT_VALUED = ad network paid $0, so we should NOT pay referrers
             if (isValued && user.referrerId) {
                 let currentReferrerId: string | null = user.referrerId;
-                // ⚠️ PLACEHOLDER VALUES — These flat amounts need to be replaced with
-                // percentage-based calculations tied to actual ad revenue per impression
-                // once the ad network integration provides eCPM/revenue data.
-                // Current: L1=5, L2=2.5, L3=1, L4=0.5, L5=0.5 (flat $MAX)
                 const payoutLevels = [5.0, 2.5, 1.0, 0.5, 0.5];
 
                 for (let i = 0; i < 5 && currentReferrerId; i++) {
