@@ -202,15 +202,15 @@ export const requestWithdrawal = async (req: Request, res: Response): Promise<vo
 
 const levels = [
     { level: 1, cost: 0, goldPerHr: 20000 },
-    { level: 2, cost: 50000, goldPerHr: 32000 },
-    { level: 3, cost: 150000, goldPerHr: 48000 },
-    { level: 4, cost: 400000, goldPerHr: 72000 },
-    { level: 5, cost: 1000000, goldPerHr: 100000 },
-    { level: 6, cost: 2500000, goldPerHr: 140000 },
-    { level: 7, cost: 6000000, goldPerHr: 200000 },
-    { level: 8, cost: 15000000, goldPerHr: 300000 },
-    { level: 9, cost: 40000000, goldPerHr: 440000 },
-    { level: 10, cost: 100000000, goldPerHr: 640000 },
+    { level: 2, cost: 100000, goldPerHr: 32000 },
+    { level: 3, cost: 300000, goldPerHr: 48000 },
+    { level: 4, cost: 800000, goldPerHr: 72000 },
+    { level: 5, cost: 2000000, goldPerHr: 100000 },
+    { level: 6, cost: 5000000, goldPerHr: 140000 },
+    { level: 7, cost: 12000000, goldPerHr: 200000 },
+    { level: 8, cost: 30000000, goldPerHr: 300000 },
+    { level: 9, cost: 80000000, goldPerHr: 440000 },
+    { level: 10, cost: 200000000, goldPerHr: 640000 },
 ];
 
 export const upgradeMiner = async (req: Request, res: Response): Promise<void> => {

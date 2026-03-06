@@ -100,15 +100,15 @@ const App: React.FC = () => {
 
   const levels = [
     { level: 1, cost: 0, goldPerHr: 20000, name: 'Wooden Pickaxe' },
-    { level: 2, cost: 50000, goldPerHr: 32000, name: 'Iron Drill' },
-    { level: 3, cost: 150000, goldPerHr: 48000, name: 'Steel Drill' },
-    { level: 4, cost: 400000, goldPerHr: 72000, name: 'Steam Engine' },
-    { level: 5, cost: 1000000, goldPerHr: 100000, name: 'Excavator' },
-    { level: 6, cost: 2500000, goldPerHr: 140000, name: 'Laser Drill' },
-    { level: 7, cost: 6000000, goldPerHr: 200000, name: 'Plasma Drill' },
-    { level: 8, cost: 15000000, goldPerHr: 300000, name: 'Quantum Miner' },
-    { level: 9, cost: 40000000, goldPerHr: 440000, name: 'Antimatter Rig' },
-    { level: 10, cost: 100000000, goldPerHr: 640000, name: 'Singularity Core' },
+    { level: 2, cost: 100000, goldPerHr: 32000, name: 'Iron Drill' },
+    { level: 3, cost: 300000, goldPerHr: 48000, name: 'Steel Drill' },
+    { level: 4, cost: 800000, goldPerHr: 72000, name: 'Steam Engine' },
+    { level: 5, cost: 2000000, goldPerHr: 100000, name: 'Excavator' },
+    { level: 6, cost: 5000000, goldPerHr: 140000, name: 'Laser Drill' },
+    { level: 7, cost: 12000000, goldPerHr: 200000, name: 'Plasma Drill' },
+    { level: 8, cost: 30000000, goldPerHr: 300000, name: 'Quantum Miner' },
+    { level: 9, cost: 80000000, goldPerHr: 440000, name: 'Antimatter Rig' },
+    { level: 10, cost: 200000000, goldPerHr: 640000, name: 'Singularity Core' },
   ];
 
   const currentLevelInfo = levels[minerLevel - 1] || levels[9];
