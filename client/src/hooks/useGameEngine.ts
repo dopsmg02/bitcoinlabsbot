@@ -117,51 +117,30 @@ export function useGameEngine() {
         return () => clearInterval(interval);
     }, [profile, fuelSeconds]);
 
-    // Periodic Backend Sync Loop (every 10s) + Unload Sync
-    useEffect(() => {
-        if (!profile) return;
+    // [PHASE 14 FIX] Removed Periodic Backend Sync & Unload Sync.
+    // Sync is now 100% manual via CLAIM button + Server-Authoritative Calculation.
+    const [isClaiming, setIsClaiming] = useState(false);
 
-        const performSync = async () => {
-            if (unclaimedGold > 0) {
-                const goldToClaim = unclaimedGold;
-                try {
-                    const res = await api.syncMining(goldToClaim, lastSyncTimeRef.current);
-                    setUnclaimedGold(curr => Math.max(0, curr - goldToClaim));
-                    lastSyncTimeRef.current = res.serverTime || Date.now();
-                } catch (e) {
-                    console.error("Sync Error:", e);
-                }
+    const claimGold = async () => {
+        if (isClaiming || unclaimedGold <= 0) return;
+        setIsClaiming(true);
+        try {
+            // Payload is ignored by Phase 14 Backend, server calculates strictly from DB timestamps
+            const res = await api.syncMining(0, 0);
+            if (res.success) {
+                setVisualGold(Number(res.goldBalance));
+                setUnclaimedGold(0);
+                lastSyncTimeRef.current = Date.now();
+                // We don't refresh profile here to avoid resetting the fuel timer visually if not needed,
+                // but the DB is safely updated.
             }
-        };
-
-        const interval = setInterval(performSync, 10000);
-
-        // [HIGH FIX F1] Ensure final sync on app close
-        const handleUnload = () => {
-            if (unclaimedGold > 0) {
-                const payload = JSON.stringify({ claimedGold: unclaimedGold, lastSyncTimestamp: lastSyncTimeRef.current });
-                const token = localStorage.getItem('token');
-
-                // Synchronous fetch attempt (Fire and forget)
-                fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/mine/sync`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: payload,
-                    keepalive: true // Critical for unload requests
-                }).catch(console.error);
-            }
-        };
-
-        window.addEventListener('beforeunload', handleUnload);
-
-        return () => {
-            clearInterval(interval);
-            window.removeEventListener('beforeunload', handleUnload);
-        };
-    }, [profile, unclaimedGold]);
+        } catch (e) {
+            console.error("Claim Error:", e);
+            alert("Failed to claim gold. Please try again.");
+        } finally {
+            setIsClaiming(false);
+        }
+    };
 
     const requestAdAndRefuel = async () => {
         if (isAdLoading) return false;
@@ -307,6 +286,9 @@ export function useGameEngine() {
         upgradeLevel,
         simulateDevLogin,
         isAdLoading,
-        isConverting
+        isConverting,
+        claimGold,
+        isClaiming,
+        unclaimedGold
     };
 }

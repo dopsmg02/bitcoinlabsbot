@@ -44,7 +44,10 @@ const App: React.FC = () => {
     simulateDevLogin,
     initError,
     isAdLoading,
-    isConverting
+    isConverting,
+    unclaimedGold,
+    claimGold,
+    isClaiming
   } = useGameEngine();
 
   const [conversionResult, setConversionResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -288,14 +291,36 @@ const App: React.FC = () => {
 
             {/* Top Info Cards - Compact */}
             <div className="grid grid-cols-2 gap-2 mb-1">
-              <div className="bg-white p-2 rounded-2xl flex flex-col items-center shadow-lg">
-                <span className="text-[8px] text-amber-600 font-black uppercase tracking-widest mb-0.5">Gold Vault</span>
-                <span className="text-lg font-black text-slate-900 leading-none">{Math.floor(goldBalance).toLocaleString()}</span>
+              <div className="bg-white p-2 rounded-2xl flex flex-col items-center shadow-lg relative overflow-hidden group">
+                <div className="absolute inset-0 bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span className="text-[8px] text-amber-600 font-black uppercase tracking-widest mb-0.5 z-10">Gold Vault</span>
+                <span className="text-lg font-black text-slate-900 leading-none z-10">{Math.floor(goldBalance).toLocaleString()}</span>
               </div>
-              <div className="bg-white p-2 rounded-2xl flex flex-col items-center shadow-lg">
-                <span className="text-[8px] text-indigo-600 font-black uppercase tracking-widest mb-0.5">Max Tokens</span>
-                <span className="text-lg font-black text-slate-900 leading-none">{maxBalance.toFixed(1)}</span>
+              <div className="bg-white p-2 rounded-2xl flex flex-col items-center shadow-lg relative overflow-hidden group">
+                <div className="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span className="text-[8px] text-indigo-600 font-black uppercase tracking-widest mb-0.5 z-10">Max Tokens</span>
+                <span className="text-lg font-black text-slate-900 leading-none z-10">{maxBalance.toFixed(1)}</span>
               </div>
+            </div>
+
+            {/* Unclaimed Gold & Claim Button */}
+            <div className="mt-2 mb-2 w-full bg-slate-900/60 backdrop-blur-md rounded-[20px] p-3 flex items-center justify-between border border-white/10 shadow-xl">
+              <div className="flex flex-col">
+                <span className="text-[9px] text-amber-400 font-black uppercase tracking-widest">Mining Yield</span>
+                <span className="text-xl font-black text-white italic tracking-tighter">
+                  +{Math.floor(unclaimedGold).toLocaleString()}
+                </span>
+              </div>
+              <button
+                onClick={claimGold}
+                disabled={isClaiming || unclaimedGold <= 0}
+                className={`px-5 py-2.5 rounded-[14px] font-black uppercase text-[10px] tracking-widest shadow-lg transition-all active:scale-95 ${unclaimedGold > 0 && !isClaiming
+                  ? 'bg-amber-500 text-slate-900 hover:bg-amber-400 shadow-amber-500/20'
+                  : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'
+                  }`}
+              >
+                {isClaiming ? 'Claiming...' : 'Claim Gold'}
+              </button>
             </div>
 
             {/* Central Area - Level Info + Logo */}
