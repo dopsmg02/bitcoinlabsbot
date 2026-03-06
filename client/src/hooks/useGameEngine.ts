@@ -72,7 +72,38 @@ export function useGameEngine() {
                 setVisualGold(Number(res.data.goldBalance));
                 setFuelSeconds(res.data.fuel.remainingSeconds);
                 lastSyncTimeRef.current = Date.now();
-                setUnclaimedGold(0);
+
+                // [PHASE 14 FIX] Visually calculate the mining yield since last sync to show correct amount on reload
+                let calculatedUnclaimed = 0;
+                if (!res.data.fuel.isDepleted && res.data.fuel.lastUpdated) {
+                    const fuelStartMs = new Date(res.data.fuel.lastUpdated).getTime();
+                    // Fallback to fuelStartMs if lastSyncAt isn't exposed (or null)
+                    const lastSyncMs = res.data.lastSyncAt ? new Date(res.data.lastSyncAt).getTime() : fuelStartMs;
+
+                    const miningWindowEndMs = fuelStartMs + (900 * 1000); // 15 mins
+                    const nowMs = Date.now();
+
+                    const claimStartMs = Math.max(lastSyncMs, fuelStartMs);
+                    const claimEndMs = Math.min(nowMs, miningWindowEndMs);
+
+                    if (claimEndMs > claimStartMs) {
+                        const earnedSeconds = (claimEndMs - claimStartMs) / 1000;
+                        const levelConfigs = [
+                            { level: 1, goldPerHr: 20000 }, { level: 2, goldPerHr: 32000 },
+                            { level: 3, goldPerHr: 48000 }, { level: 4, goldPerHr: 72000 },
+                            { level: 5, goldPerHr: 100000 }, { level: 6, goldPerHr: 140000 },
+                            { level: 7, goldPerHr: 200000 }, { level: 8, goldPerHr: 300000 },
+                            { level: 9, goldPerHr: 440000 }, { level: 10, goldPerHr: 640000 },
+                        ];
+                        const cfg = levelConfigs[res.data.minerLevel - 1] || levelConfigs[0];
+                        const goldPerSec = cfg.goldPerHr / 3600;
+                        const multiplier = res.data.ads.multiplier || 1.0;
+
+                        calculatedUnclaimed = earnedSeconds * goldPerSec * multiplier;
+                    }
+                }
+
+                setUnclaimedGold(calculatedUnclaimed);
             }
         } catch (e) {
             console.error("Profile Fetch Error:", e);

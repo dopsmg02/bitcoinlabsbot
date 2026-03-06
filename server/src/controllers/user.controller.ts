@@ -19,6 +19,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
                 goldBalance: true,
                 maxBalance: true,
                 fuelUpdatedAt: true,
+                lastSyncAt: true,
                 lastAdWatch: true,
                 lastWithdrawAt: true,
                 createdAt: true
@@ -58,6 +59,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
             success: true,
             data: {
                 id: profile.id, // [HOTFIX] Expose ID to frontend to fix undefined invite links
+                lastSyncAt: profile.lastSyncAt, // [PHASE 14 FIX] Expose sync time for precise offline yield calculation
                 minerLevel: profile.minerLevel,
                 goldBalance: profile.goldBalance.toString(),
                 maxBalance: profile.maxBalance,
