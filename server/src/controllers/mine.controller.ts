@@ -13,7 +13,12 @@ export const syncMining = async (req: Request, res: Response): Promise<void> => 
         // 1. Fetch User Data
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            select: { minerLevel: true, lastSyncAt: true, fuelUpdatedAt: true }
+            select: {
+                minerLevel: true,
+                // @ts-ignore
+                lastSyncAt: true,
+                fuelUpdatedAt: true
+            }
         });
 
         if (!user) {
@@ -40,6 +45,7 @@ export const syncMining = async (req: Request, res: Response): Promise<void> => 
 
         // The user can only claim gold from the period they haven't synced yet
         // If lastSyncAt is null (brand new user), set it to fuelUpdatedAt to prevent claiming before playing
+        // @ts-ignore
         const lastSyncMs = user.lastSyncAt ? user.lastSyncAt.getTime() : fuelUpdatedAtMs;
         const nowMs = Date.now();
 
@@ -72,6 +78,7 @@ export const syncMining = async (req: Request, res: Response): Promise<void> => 
             where: { id: userId },
             data: {
                 goldBalance: { increment: BigInt(Math.floor(goldEarned)) },
+                // @ts-ignore
                 lastSyncAt: newSyncTime
             }
         });

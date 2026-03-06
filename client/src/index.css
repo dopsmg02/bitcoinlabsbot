@@ -10,4 +10,24 @@ body {
   color: var(--tg-theme-text-color, white);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Base class for hardware accelerated animations */
+.gpu-accel {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Disable expensive effects on mobile if needed, but here we optimize first */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

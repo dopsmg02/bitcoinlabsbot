@@ -19,6 +19,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
                 goldBalance: true,
                 maxBalance: true,
                 fuelUpdatedAt: true,
+                // @ts-ignore
                 lastSyncAt: true,
                 lastAdWatch: true,
                 lastWithdrawAt: true,
@@ -55,13 +56,57 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
         else if (adCountToday >= 25) { tierName = 'GOLD'; multiplier = 1.5; }
         else if (adCountToday >= 10) { tierName = 'SILVER'; multiplier = 1.2; }
 
+        // [PHASE 14.1 - SILENT HARVEST]
+        // If a session has ended (isFuelDepleted) and there's unclaimed gold from that session, 
+        // automatically "harvest" it into the Gold Vault so user doesn't lose it if they forget to manual claim.
+        let finalGoldBalance = profile.goldBalance;
+        let finalLastSyncAt = profile.lastSyncAt;
+
+        if (isFuelDepleted) {
+            const fuelStartMs = profile.fuelUpdatedAt.getTime();
+            const miningWindowEndMs = fuelStartMs + (FUEL_DURATION_SECONDS * 1000);
+            // @ts-ignore
+            const lastSyncMs = profile.lastSyncAt ? profile.lastSyncAt.getTime() : fuelStartMs;
+
+            const claimStartMs = Math.max(lastSyncMs, fuelStartMs);
+            const claimEndMs = Math.min(now.getTime(), miningWindowEndMs);
+
+            if (claimEndMs > claimStartMs) {
+                const earnedSeconds = (claimEndMs - claimStartMs) / 1000;
+                const levelConfigs = [
+                    { level: 1, goldPerHr: 20000 }, { level: 2, goldPerHr: 32000 },
+                    { level: 3, goldPerHr: 48000 }, { level: 4, goldPerHr: 72000 },
+                    { level: 5, goldPerHr: 100000 }, { level: 6, goldPerHr: 140000 },
+                    { level: 7, goldPerHr: 200000 }, { level: 8, goldPerHr: 300000 },
+                    { level: 9, goldPerHr: 440000 }, { level: 10, goldPerHr: 640000 }
+                ];
+                const cfg = levelConfigs[profile.minerLevel - 1] || levelConfigs[0];
+                const goldPerSec = cfg.goldPerHr / 3600;
+                const goldEarned = Math.floor(earnedSeconds * goldPerSec * multiplier);
+
+                if (goldEarned > 0) {
+                    const updatedUser = await prisma.user.update({
+                        where: { id: userId },
+                        data: {
+                            goldBalance: { increment: BigInt(goldEarned) },
+                            // @ts-ignore
+                            lastSyncAt: new Date(miningWindowEndMs)
+                        }
+                    });
+                    finalGoldBalance = updatedUser.goldBalance;
+                    finalLastSyncAt = updatedUser.lastSyncAt;
+                }
+            }
+        }
+
         res.status(200).json({
             success: true,
             data: {
                 id: profile.id, // [HOTFIX] Expose ID to frontend to fix undefined invite links
-                lastSyncAt: profile.lastSyncAt, // [PHASE 14 FIX] Expose sync time for precise offline yield calculation
+                // @ts-ignore
+                lastSyncAt: finalLastSyncAt,
                 minerLevel: profile.minerLevel,
-                goldBalance: profile.goldBalance.toString(),
+                goldBalance: finalGoldBalance.toString(),
                 maxBalance: profile.maxBalance,
                 fuel: {
                     remainingSeconds: fuelRemaining,

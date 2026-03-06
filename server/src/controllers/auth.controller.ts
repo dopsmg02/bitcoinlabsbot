@@ -76,12 +76,25 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
 
         if (user) {
             // Existing user — update login IP and premium status
+            const updateData: any = {
+                lastLoginIp: clientIp,
+                isPremium: isPremium
+            };
+
+            // [REFERRAL V14.2 FIX] "Late Attachment"
+            // If the user already exists but doesn't have a referrer yet,
+            // we allow them to be "claimed" by a referrer now.
+            if (!user.referrerId && referrerId && typeof referrerId === 'string' && referrerId !== userIdStr) {
+                const referrerExists = await prisma.user.findUnique({ where: { id: referrerId } });
+                if (referrerExists) {
+                    updateData.referrerId = referrerId;
+                    console.log(`[REFERRAL] Late binding: User ${userIdStr} now referred by ${referrerId}`);
+                }
+            }
+
             await prisma.user.update({
                 where: { id: userIdStr },
-                data: {
-                    lastLoginIp: clientIp,
-                    isPremium: isPremium
-                }
+                data: updateData
             });
         }
 

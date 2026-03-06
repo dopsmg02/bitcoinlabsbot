@@ -31,6 +31,7 @@ export function useGameEngine() {
             }
 
             // 3. Login with official initData
+            // [REFERRAL V14.2 FIX] Always pass referrerId to support late binding
             const loginRes = await api.login(initDataRaw, referrerId);
             if (!loginRes.success) {
                 setInitError(loginRes.error || "Login failed");

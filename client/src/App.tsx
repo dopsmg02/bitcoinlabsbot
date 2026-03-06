@@ -196,7 +196,7 @@ const App: React.FC = () => {
         <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
           <motion.div
             animate={{
-              scale: [1, 1.08, 1],
+              scale: [1, 1.05, 1],
               opacity: [0.9, 1, 0.9]
             }}
             transition={{
@@ -204,9 +204,9 @@ const App: React.FC = () => {
               duration: 3,
               ease: "easeInOut"
             }}
-            className="mb-12 w-full max-w-[280px]"
+            className="mb-12 w-full max-w-[280px] gpu-accel"
           >
-            <img src="/logo.png" alt="Max Miner Logo" className="w-full h-auto object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]" />
+            <img src="/logo.png" alt="Max Miner Logo" className="w-full h-auto object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]" />
           </motion.div>
 
           <div className="absolute bottom-12 flex flex-col items-center gap-4">
@@ -241,10 +241,10 @@ const App: React.FC = () => {
         <motion.img
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', damping: 10, mass: 0.75, stiffness: 100 }}
+          transition={{ type: 'spring', damping: 12, mass: 0.75, stiffness: 100 }}
           src="/logo.png"
           alt="Max Miner"
-          className="w-48 h-auto drop-shadow-[0_0_50px_rgba(255,255,255,0.3)] mb-8"
+          className="w-48 h-auto drop-shadow-[0_0_40px_rgba(255,255,255,0.25)] mb-8 gpu-accel"
         />
         <motion.div
           initial={{ y: 20, opacity: 0 }}
@@ -345,7 +345,7 @@ const App: React.FC = () => {
                   alt="Axe"
                   animate={{ rotate: [0, -10, 6, -3, 0], scale: [1, 1.03, 1] }}
                   transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
-                  className="w-48 h-48 object-contain"
+                  className="w-48 h-48 object-contain gpu-accel"
                 />
               ) : (
                 <img src="/pickaxe.png" alt="Axe" className="w-48 h-48 object-contain" />
@@ -378,9 +378,9 @@ const App: React.FC = () => {
               <motion.button
                 onClick={refuel}
                 disabled={fuelSeconds > 0 || adWatchCount >= MAX_ADS_PER_DAY || isAdLoading}
-                animate={fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY && !isAdLoading ? { scale: [1, 1.05, 1], boxShadow: ["0px 0px 0px rgba(79,70,229,0)", "0px 0px 30px rgba(79,70,229,0.5)", "0px 0px 0px rgba(79,70,229,0)"] } : {}}
+                animate={fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY && !isAdLoading ? { scale: [1, 1.02, 1], opacity: [0.9, 1, 0.9] } : {}}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className={`w-full group p-4 rounded-[24px] font-black flex items-center justify-center gap-3 transition-all active:scale-[0.98] border-[3px] shadow-2xl relative overflow-hidden
+                className={`w-full group p-4 rounded-[24px] font-black flex items-center justify-center gap-3 transition-all active:scale-[0.98] border-[3px] shadow-2xl relative overflow-hidden gpu-accel
                   ${fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY && !isAdLoading
                     ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border-white/20'
                     : 'bg-slate-900/80 backdrop-blur-md text-slate-500 border-white/5 cursor-not-allowed'
