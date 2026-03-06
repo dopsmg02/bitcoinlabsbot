@@ -19,6 +19,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [loadingUsers, setLoadingUsers] = useState(false);
+    const [loadingConfig, setLoadingConfig] = useState(false);
 
     // Withdrawal State
     const [withdrawals, setWithdrawals] = useState<any[]>([]);
@@ -42,6 +43,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
             loadUsers(page, searchQuery);
         } else if (activeTab === 'PAYOUTS') {
             loadWithdrawals(page);
+        } else if (activeTab === 'SETTINGS') {
+            loadConfig();
         }
     }, [activeTab, page]);
 
@@ -55,11 +58,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
     };
 
     const loadConfig = async () => {
+        setLoadingConfig(true);
         try {
             const res = await api.getAdminConfig();
             if (res.success) setConfig(res.data);
         } catch (e: any) {
             alert("Failed to load config: " + e.message);
+        } finally {
+            setLoadingConfig(false);
         }
     };
 
@@ -379,35 +385,49 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
                 )}
 
                 {/* SETTINGS (GOD MODE) */}
-                {activeTab === 'SETTINGS' && config && userRole === 'SUPER_ADMIN' && (
+                {activeTab === 'SETTINGS' && userRole === 'SUPER_ADMIN' && (
                     <div className="max-w-2xl mx-auto space-y-6">
-                        <div className="bg-slate-900 border border-red-500/30 p-6 rounded-3xl shadow-xl">
-                            <h3 className="text-red-400 font-black uppercase tracking-widest mb-4 flex items-center gap-2"><ShieldAlert size={20} /> Macro Economy Control</h3>
+                        {loadingConfig ? (
+                            <div className="flex flex-col items-center justify-center p-20">
+                                <Loader2 className="w-12 h-12 animate-spin text-indigo-500 mb-4" />
+                                <div className="text-slate-400 font-black uppercase tracking-widest animate-pulse">Retrieving System Core...</div>
+                            </div>
+                        ) : !config ? (
+                            <div className="bg-slate-900 border border-white/10 p-10 rounded-3xl text-center">
+                                <ShieldAlert className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+                                <h3 className="text-xl font-black mb-2 uppercase">Configuration Missing</h3>
+                                <p className="text-slate-400 text-sm mb-6">Unable to access the Global System Config. This could be a database sync issue.</p>
+                                <button onClick={loadConfig} className="bg-indigo-600 px-8 py-3 rounded-2xl font-black uppercase text-xs hover:bg-indigo-500 transition-all">Retry Link</button>
+                            </div>
+                        ) : (
+                            <div className="bg-slate-900 border border-red-500/30 p-6 rounded-3xl shadow-xl">
+                                <h3 className="text-red-400 font-black uppercase tracking-widest mb-4 flex items-center gap-2"><ShieldAlert size={20} /> Macro Economy Control</h3>
 
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between p-4 bg-black/40 rounded-2xl border border-white/5">
-                                    <div>
-                                        <div className="font-bold text-white mb-1">Maintenance Mode</div>
-                                        <div className="text-xs text-slate-400 max-w-xs">Disables mining APIs and app access for all regular players.</div>
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between p-4 bg-black/40 rounded-2xl border border-white/5">
+                                        <div>
+                                            <div className="font-bold text-white mb-1">Maintenance Mode</div>
+                                            <div className="text-xs text-slate-400 max-w-xs">Disables mining APIs and app access for all regular players.</div>
+                                        </div>
+                                        <button onClick={() => handleConfigUpdate('MAINTENANCE', !config.maintenanceMode)}
+                                            className={`px-6 py-3 rounded-xl font-black uppercase text-xs transition-colors ${config.maintenanceMode ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
+                                            {config.maintenanceMode ? 'ACTIVE' : 'OFF'}
+                                        </button>
                                     </div>
-                                    <button onClick={() => handleConfigUpdate('MAINTENANCE', !config.maintenanceMode)}
-                                        className={`px-6 py-3 rounded-xl font-black uppercase text-xs transition-colors ${config.maintenanceMode ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
-                                        {config.maintenanceMode ? 'ACTIVE' : 'OFF'}
-                                    </button>
-                                </div>
 
-                                <div className="flex items-center justify-between p-4 bg-black/40 rounded-2xl border border-white/5">
-                                    <div>
-                                        <div className="font-bold text-white mb-1">Exchange Rate (Gold to $MAX)</div>
-                                        <div className="text-xs text-slate-400 max-w-xs">Cost in Gold to acquire 1.0 MAX. Current: {config.goldToMaxRate} G.</div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <input type="number" id="rateInput" defaultValue={config.goldToMaxRate} className="w-24 bg-slate-950 border border-white/10 rounded-xl px-3 text-sm text-center" />
-                                        <button onClick={() => handleConfigUpdate('RATE', (document.getElementById('rateInput') as HTMLInputElement).value)} className="bg-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-500">SAVE</button>
+                                    <div className="flex items-center justify-between p-4 bg-black/40 rounded-2xl border border-white/5">
+                                        <div>
+                                            <div className="font-bold text-white mb-1">Exchange Rate (Gold to $MAX)</div>
+                                            <div className="text-xs text-slate-400 max-w-xs">Cost in Gold to acquire 1.0 MAX. Current: {config.goldToMaxRate} G.</div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <input type="number" id="rateInput" defaultValue={config.goldToMaxRate} className="w-24 bg-slate-950 border border-white/10 rounded-xl px-3 text-sm text-center" />
+                                            <button onClick={() => handleConfigUpdate('RATE', (document.getElementById('rateInput') as HTMLInputElement).value)} className="bg-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-500">SAVE</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </div>

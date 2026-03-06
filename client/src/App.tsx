@@ -115,12 +115,12 @@ const App: React.FC = () => {
   };
 
   const convertGoldToMax = async () => {
-    if (goldBalance >= 5000) {
-      const result = await convertGold(5000);
+    if (goldBalance >= 50000) {
+      const result = await convertGold(50000);
       if (result) {
         setConversionResult({
           success: result.success,
-          message: result.success ? "Successfully converted 5,000 Gold to 4.0 $MAX!" : (result.error || "Conversion failed")
+          message: result.success ? "Successfully converted 50,000 Gold to 40.0 $MAX!" : (result.error || "Conversion failed")
         });
         // Auto-hide result after 4 seconds
         setTimeout(() => setConversionResult(null), 4000);
@@ -575,19 +575,19 @@ const App: React.FC = () => {
               <div className="flex items-center justify-between bg-black/40 p-5 rounded-[30px] mb-6 border border-white/5">
                 <div className="text-center flex-1">
                   <div className="text-[10px] text-indigo-400 font-black uppercase mb-1">PAY GOLD</div>
-                  <div className="text-2xl font-black text-white">5,000</div>
+                  <div className="text-2xl font-black text-white">50,000</div>
                 </div>
                 <div className="px-4"><ArrowRight className="text-indigo-500" size={24} /></div>
                 <div className="text-center flex-1">
                   <div className="text-[10px] text-sky-400 font-black uppercase mb-1">GET $MAX</div>
-                  <div className="text-2xl font-black text-white">4.0</div>
+                  <div className="text-2xl font-black text-white">40.0</div>
                 </div>
               </div>
               <button
                 onClick={convertGoldToMax}
-                disabled={goldBalance < 5000 || isConverting}
+                disabled={goldBalance < 50000 || isConverting}
                 className={`w-full py-4 rounded-2xl font-black transition-all shadow-xl uppercase tracking-widest text-xs flex items-center justify-center gap-2
-                  ${goldBalance >= 5000 && !isConverting ? 'bg-indigo-500 text-white hover:bg-indigo-400' : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border border-white/5'}`}
+                  ${goldBalance >= 50000 && !isConverting ? 'bg-indigo-500 text-white hover:bg-indigo-400' : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border border-white/5'}`}
               >
                 {isConverting ? (
                   <>
