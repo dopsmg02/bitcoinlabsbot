@@ -245,3 +245,102 @@ export const updateSystemConfig = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, error: 'Failed to update config' });
     }
 };
+
+export const getWithdrawals = async (req: Request, res: Response) => {
+    try {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 50;
+        const status = req.query.status as any;
+
+        const skip = (page - 1) * limit;
+        const where: any = {};
+        if (status) where.status = status;
+
+        const [items, total] = await Promise.all([
+            prisma.withdrawal.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            telegramUsername: true
+                        }
+                    }
+                }
+            }),
+            prisma.withdrawal.count({ where })
+        ]);
+
+        res.json({
+            success: true,
+            data: items,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('getWithdrawals error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch withdrawals' });
+    }
+};
+
+export const updateWithdrawalStatus = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body; // 'COMPLETED' | 'FAILED'
+
+        if (status !== 'COMPLETED' && status !== 'FAILED') {
+            return res.status(400).json({ success: false, error: 'Invalid status' });
+        }
+
+        const withdrawal = await prisma.withdrawal.findUnique({
+            where: { id },
+            include: { user: true }
+        });
+
+        if (!withdrawal) return res.status(404).json({ success: false, error: 'Withdrawal not found' });
+        if (withdrawal.status !== 'PENDING') return res.status(400).json({ success: false, error: 'Withdrawal already processed' });
+
+        if (status === 'COMPLETED') {
+            await prisma.withdrawal.update({
+                where: { id },
+                data: { status: 'COMPLETED', processedAt: new Date() }
+            });
+        } else {
+            // Refund on FAILED
+            const refundAmount = Number(withdrawal.amount) + Number(withdrawal.fee);
+            await prisma.$transaction([
+                prisma.withdrawal.update({
+                    where: { id },
+                    data: { status: 'FAILED', processedAt: new Date() }
+                }),
+                prisma.user.update({
+                    where: { id: withdrawal.userId },
+                    data: {
+                        maxBalance: { increment: refundAmount }
+                    }
+                }),
+                prisma.transaction.create({
+                    data: {
+                        userId: withdrawal.userId,
+                        type: 'WITHDRAW',
+                        amount: refundAmount,
+                        currency: 'MAX',
+                        description: `Refund for rejected withdrawal ${id}`
+                    }
+                })
+            ]);
+        }
+
+        res.json({ success: true, message: `Withdrawal successfully ${status}` });
+    } catch (error) {
+        console.error('updateWithdrawalStatus error:', error);
+        res.status(500).json({ success: false, error: 'Failed to update withdrawal status' });
+    }
+};

@@ -282,7 +282,7 @@ const App: React.FC = () => {
 
       <div className="relative z-10 max-w-md mx-auto h-screen flex flex-col pt-3 px-3 overflow-hidden">
         <header className="flex justify-between items-center mb-4">
-          <div className="flex items-center -ml-7">
+          <div className="flex items-center ml-2">
             <img src="/logo.png" alt="Max Miner Logo" className="h-[68px] object-contain drop-shadow-xl" />
           </div>
           <div className="flex items-center gap-2">

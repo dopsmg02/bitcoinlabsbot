@@ -9,7 +9,7 @@ interface AdminViewProps {
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'SETTINGS'>('DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'PAYOUTS' | 'SETTINGS'>('DASHBOARD');
     const [stats, setStats] = useState<any>(null);
     const [config, setConfig] = useState<any>(null);
 
@@ -19,6 +19,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [loadingUsers, setLoadingUsers] = useState(false);
+
+    // Withdrawal State
+    const [withdrawals, setWithdrawals] = useState<any[]>([]);
+    const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
 
     // Modal State
     const [editingUser, setEditingUser] = useState<any>(null);
@@ -36,6 +40,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
     useEffect(() => {
         if (activeTab === 'USERS') {
             loadUsers(page, searchQuery);
+        } else if (activeTab === 'PAYOUTS') {
+            loadWithdrawals(page);
         }
     }, [activeTab, page]);
 
@@ -43,8 +49,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
         try {
             const res = await api.getAdminStats();
             if (res.success) setStats(res.data);
-        } catch (e) {
-            console.error("Failed to load stats", e);
+        } catch (e: any) {
+            alert("Failed to load stats: " + e.message);
         }
     };
 
@@ -52,8 +58,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
         try {
             const res = await api.getAdminConfig();
             if (res.success) setConfig(res.data);
-        } catch (e) {
-            console.error("Failed to load config", e);
+        } catch (e: any) {
+            alert("Failed to load config: " + e.message);
         }
     };
 
@@ -69,6 +75,32 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
             console.error(e);
         } finally {
             setLoadingUsers(false);
+        }
+    };
+
+    const loadWithdrawals = async (pageNum: number) => {
+        setLoadingWithdrawals(true);
+        try {
+            const res = await api.getAdminWithdrawals(pageNum, 50);
+            if (res.success) {
+                setWithdrawals(res.data);
+                setTotalPages(res.meta.totalPages);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingWithdrawals(false);
+        }
+    };
+
+    const handleWithdrawalAction = async (id: string, status: 'COMPLETED' | 'FAILED') => {
+        if (!window.confirm(`Are you sure you want to ${status === 'COMPLETED' ? 'APPROVE' : 'REJECT'} this withdrawal?`)) return;
+        try {
+            await api.adminUpdateWithdrawalStatus(id, status);
+            loadWithdrawals(page);
+            loadStats();
+        } catch (e) {
+            alert("Failed to update withdrawal status");
         }
     };
 
@@ -166,6 +198,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
                 {[
                     { id: 'DASHBOARD', icon: Activity, label: 'Overview' },
                     { id: 'USERS', icon: Users, label: 'Mod Panel' },
+                    { id: 'PAYOUTS', icon: Coins, label: 'Payouts' },
                     { id: 'SETTINGS', icon: Settings, label: 'God Mode', super: true }
                 ].map((tab) => {
                     if (tab.super && userRole !== 'SUPER_ADMIN') return null;
@@ -261,6 +294,71 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
                                                             </button>
                                                             {userRole === 'SUPER_ADMIN' && user.role === 'PLAYER' && <button title="Make Admin" onClick={() => handleRoleChange(user, 'ADMIN')} className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-colors"><ShieldPlus size={16} /></button>}
                                                             {userRole === 'SUPER_ADMIN' && user.role === 'ADMIN' && <button title="Revoke Admin" onClick={() => handleRoleChange(user, 'PLAYER')} className="p-2 bg-orange-500/10 text-orange-400 rounded-lg hover:bg-orange-500 hover:text-white transition-colors"><ShieldPlus size={16} /></button>}
+                                                        </>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="p-4 border-t border-white/5 flex justify-between items-center text-xs">
+                                <span className="text-slate-500">Page {page} of {totalPages}</span>
+                                <div className="space-x-2">
+                                    <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-4 py-2 bg-white/5 rounded-lg disabled:opacity-50">Prev</button>
+                                    <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="px-4 py-2 bg-white/5 rounded-lg disabled:opacity-50">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* PAYOUTS TAB */}
+                {activeTab === 'PAYOUTS' && (
+                    <div className="max-w-6xl mx-auto flex flex-col h-full">
+                        <div className="bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex-1 flex flex-col">
+                            <div className="overflow-x-auto flex-1">
+                                <table className="w-full text-left text-sm whitespace-nowrap">
+                                    <thead className="bg-slate-950/50 text-slate-400 text-xs uppercase tracking-wider font-black">
+                                        <tr>
+                                            <th className="p-4">User & Time</th>
+                                            <th className="p-4">Amount</th>
+                                            <th className="p-4">Destination</th>
+                                            <th className="p-4">Status</th>
+                                            <th className="p-4 text-right">Review</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {loadingWithdrawals ? (
+                                            <tr><td colSpan={5} className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></td></tr>
+                                        ) : withdrawals.length === 0 ? (
+                                            <tr><td colSpan={5} className="p-8 text-center text-slate-500 font-bold italic">No withdrawal requests found.</td></tr>
+                                        ) : withdrawals.map(w => (
+                                            <tr key={w.id} className="hover:bg-white/5 transition-colors">
+                                                <td className="p-4">
+                                                    <div className="font-bold text-white">{w.user?.telegramUsername || 'Unknown'}</div>
+                                                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">{new Date(w.createdAt).toLocaleString()}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-xl font-black text-white">{Number(w.amount).toLocaleString()} <span className="text-sky-400 text-[10px]">$MAX</span></div>
+                                                    <div className="text-[10px] text-slate-500">Fee: {Number(w.fee)}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="text-[10px] font-mono text-slate-400 bg-black/40 px-2 py-1 rounded border border-white/5">{w.walletAddress}</div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className={`text-[9px] px-2 py-0.5 rounded font-black border uppercase
+                                                        ${w.status === 'PENDING' ? 'bg-amber-500/20 text-amber-500 border-amber-500/20' :
+                                                            w.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/20' :
+                                                                'bg-red-500/20 text-red-500 border-red-500/20'}`}>
+                                                        {w.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-right space-x-2">
+                                                    {w.status === 'PENDING' && (
+                                                        <>
+                                                            <button onClick={() => handleWithdrawalAction(w.id, 'COMPLETED')} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-black text-[10px] hover:bg-emerald-500 transition-colors uppercase">APPROVE</button>
+                                                            <button onClick={() => handleWithdrawalAction(w.id, 'FAILED')} className="px-3 py-1.5 bg-red-600 text-white rounded-lg font-black text-[10px] hover:bg-red-500 transition-colors uppercase">REJECT</button>
                                                         </>
                                                     )}
                                                 </td>

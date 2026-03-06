@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://3.236.147.88:3000/api';
+const isProd = import.meta.env.PROD;
+const API_URL = isProd ? '/api' : (import.meta.env.VITE_API_URL || 'http://3.236.147.88:3000/api');
 
 class Api {
     private token: string | null = localStorage.getItem('jwt');
@@ -148,6 +149,21 @@ class Api {
         return this.request('/admin/config', {
             method: 'POST',
             body: JSON.stringify(data)
+        });
+    }
+
+    // --- WITHDRAWAL MANAGEMENT ---
+
+    async getAdminWithdrawals(page = 1, limit = 50, status?: string) {
+        const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+        if (status) query.append('status', status);
+        return this.request(`/admin/withdrawals?${query.toString()}`);
+    }
+
+    async adminUpdateWithdrawalStatus(withdrawalId: string, status: 'COMPLETED' | 'FAILED') {
+        return this.request(`/admin/withdrawals/${withdrawalId}/status`, {
+            method: 'POST',
+            body: JSON.stringify({ status })
         });
     }
 }

@@ -20,4 +20,8 @@ router.post('/users/:id/role', requireSuperAdmin, adminController.setAdminRole);
 router.get('/config', requireSuperAdmin, adminController.getSystemConfig);
 router.post('/config', requireSuperAdmin, adminController.updateSystemConfig);
 
+// Payout/Withdrawal Management (Admin+)
+router.get('/withdrawals', requireAdmin, adminController.getWithdrawals);
+router.post('/withdrawals/:id/status', requireAdmin, adminController.updateWithdrawalStatus);
+
 export default router;
