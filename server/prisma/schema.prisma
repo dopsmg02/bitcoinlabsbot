@@ -12,10 +12,17 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum Role {
+  PLAYER
+  ADMIN
+  SUPER_ADMIN
+}
+
 model User {
   id                    String        @id // Telegram ID
   telegramUsername      String?
   isPremium             Boolean       @default(false)
+  role                  Role          @default(PLAYER)
   
   // TLT System & Progression
   minerLevel            Int           @default(1)
@@ -131,4 +138,11 @@ enum WithdrawStatus {
   APPROVED
   COMPLETED
   FAILED
+}
+
+model SystemConfig {
+  id              String   @id @default("GLOBAL")
+  maintenanceMode Boolean  @default(false)
+  goldToMaxRate   Decimal  @default(1250) @db.Decimal(18, 2) // e.g., 5000 Gold = 4.0 MAX -> Rate is 1250:1
+  updatedAt       DateTime @updatedAt
 }

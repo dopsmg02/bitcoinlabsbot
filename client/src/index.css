@@ -13,15 +13,27 @@ body {
   overflow: hidden;
   height: 100vh;
   -webkit-overflow-scrolling: touch;
+  /* Prevent blue highlight on tap in mobile */
+  -webkit-tap-highlight-color: transparent;
+  /* Lock zoom */
+  touch-action: manipulation;
 }
 
 /* Base class for hardware accelerated animations */
 .gpu-accel {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+  -webkit-perspective: 1000;
+  perspective: 1000;
   will-change: transform, opacity;
+}
+
+/* Optimize image rendering */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  -webkit-user-drag: none;
 }
 
 /* Disable expensive effects on mobile if needed, but here we optimize first */

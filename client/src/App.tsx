@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
-import { Coins, Users, Rocket, PlayCircle, Star, ArrowRight, ShieldAlert, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Coins, Users, Rocket, PlayCircle, Star, ArrowRight, ShieldAlert, Loader2, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { api } from './api';
+import { AdminView } from './components/AdminView';
 
 const App: React.FC = () => {
   const { isConnected } = useAccount();
   const [activeTab, setActiveTab] = useState<'MINE' | 'UPGRADE' | 'FRIENDS' | 'WALLET'>('MINE');
+
+  // Admin View State
+  const [showAdminView, setShowAdminView] = useState(false);
 
   // New Feature States
   const [showWelcome, setShowWelcome] = useState(true);
@@ -47,7 +51,9 @@ const App: React.FC = () => {
     isConverting,
     unclaimedGold,
     claimGold,
-    isClaiming
+    isClaiming,
+    registrationBonus,
+    setRegistrationBonus
   } = useGameEngine();
 
   const [conversionResult, setConversionResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -69,24 +75,23 @@ const App: React.FC = () => {
 
   const adTier = getAdTier();
 
-  const [tltInfo, setTltInfo] = useState<{ id: string; prefix: string; isPremium: boolean; finalLevel: number; reason: string } | null>(null);
+  const [tltInfo, setTltInfo] = useState<{ tierName: string; level: number; bonusGold: number; isPremium: boolean } | null>(null);
   const [showTltModal, setShowTltModal] = useState(false);
 
+  // Handle Registration Bonus Notification
   useEffect(() => {
-    if (profile && profile.minerLevel > 1 && !localStorage.getItem('tlt_shown')) {
-      const idStr = String(profile.id);
-      const prefix = idStr.length >= 10 ? idStr[0] : '-';
+    if (registrationBonus) {
       setTltInfo({
-        id: idStr,
-        prefix,
-        isPremium: false,
-        finalLevel: profile.minerLevel,
-        reason: "Veteran Telegram Account Bonus"
+        tierName: registrationBonus.tierName,
+        level: registrationBonus.level,
+        bonusGold: registrationBonus.bonusGold,
+        isPremium: registrationBonus.tierName.includes('VIP')
       });
       setShowTltModal(true);
-      localStorage.setItem('tlt_shown', 'true');
+      // Clear after capturing to local state
+      setRegistrationBonus(null);
     }
-  }, [profile]);
+  }, [registrationBonus, setRegistrationBonus]);
 
   const levels = [
     { level: 1, cost: 0, goldPerHr: 20000, name: 'Wooden Pickaxe' },
@@ -158,7 +163,7 @@ const App: React.FC = () => {
           <div className="absolute inset-0 bg-slate-950/30 backdrop-blur-[1px]" />
         </div>
 
-        <div className="relative z-10 flex flex-col items-center bg-slate-950/60 backdrop-blur-xl p-8 rounded-[40px] border border-white/10 shadow-2xl scale-[0.8]">
+        <div className="relative z-10 flex flex-col items-center bg-slate-950/60 backdrop-blur-xl p-8 rounded-[40px] border border-white/10 shadow-2xl">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-6 border border-red-500/30">
             <ShieldAlert className="text-red-500 w-12 h-12" />
           </motion.div>
@@ -193,10 +198,10 @@ const App: React.FC = () => {
           <div className="absolute inset-0 bg-slate-950/20" />
         </div>
 
-        <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center scale-[0.8]">
+        <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center">
           <motion.div
             animate={{
-              scale: [1, 1.05, 1],
+              scale: [1, 1.08, 1],
               opacity: [0.9, 1, 0.9]
             }}
             transition={{
@@ -204,9 +209,9 @@ const App: React.FC = () => {
               duration: 3,
               ease: "easeInOut"
             }}
-            className="mb-12 w-full max-w-[280px] gpu-accel"
+            className="mb-12 w-full max-w-[280px]"
           >
-            <img src="/logo.png" alt="Max Miner Logo" className="w-full h-auto object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]" />
+            <img src="/logo.png" alt="Max Miner Logo" className="w-full h-auto object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]" />
           </motion.div>
 
           <div className="absolute bottom-12 flex flex-col items-center gap-4">
@@ -236,15 +241,15 @@ const App: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-2xl scale-[0.8] origin-center"
+        className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-2xl"
       >
         <motion.img
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', damping: 12, mass: 0.75, stiffness: 100 }}
+          transition={{ type: 'spring', damping: 10, mass: 0.75, stiffness: 100 }}
           src="/logo.png"
           alt="Max Miner"
-          className="w-48 h-auto drop-shadow-[0_0_40px_rgba(255,255,255,0.25)] mb-8 gpu-accel"
+          className="w-48 h-auto drop-shadow-[0_0_50px_rgba(255,255,255,0.3)] mb-8"
         />
         <motion.div
           initial={{ y: 20, opacity: 0 }}
@@ -265,7 +270,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-black text-white font-sans selection:bg-amber-500/30">
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-amber-500/30">
 
       <div className="fixed inset-0 z-0">
         <img
@@ -275,14 +280,25 @@ const App: React.FC = () => {
         />
       </div>
 
-      <div className="relative z-10 max-w-lg mx-auto h-[125%] flex flex-col pt-3 px-3 scale-[0.8] origin-top">
+      <div className="relative z-10 max-w-md mx-auto h-screen flex flex-col pt-3 px-3 overflow-hidden">
         <header className="flex justify-between items-center mb-4">
           <div className="flex items-center -ml-7">
             <img src="/logo.png" alt="Max Miner Logo" className="h-[68px] object-contain drop-shadow-xl" />
           </div>
-          <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2 shadow-lg">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-black text-slate-900 uppercase">Online</span>
+          <div className="flex items-center gap-2">
+            {profile?.role && (profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN') && (
+              <button
+                onClick={() => setShowAdminView(true)}
+                className="bg-indigo-600/90 hover:bg-indigo-500 backdrop-blur-md px-3 py-1.5 rounded-full border border-indigo-400 p-2 shadow-lg flex items-center gap-1 transition-colors"
+              >
+                <Shield size={14} className="text-white" />
+                <span className="text-[10px] font-black text-white uppercase ml-1">Admin</span>
+              </button>
+            )}
+            <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2 shadow-lg">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-black text-slate-900 uppercase">Online</span>
+            </div>
           </div>
         </header>
 
@@ -345,7 +361,7 @@ const App: React.FC = () => {
                   alt="Axe"
                   animate={{ rotate: [0, -10, 6, -3, 0], scale: [1, 1.03, 1] }}
                   transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
-                  className="w-48 h-48 object-contain gpu-accel"
+                  className="w-48 h-48 object-contain"
                 />
               ) : (
                 <img src="/pickaxe.png" alt="Axe" className="w-48 h-48 object-contain" />
@@ -378,9 +394,9 @@ const App: React.FC = () => {
               <motion.button
                 onClick={refuel}
                 disabled={fuelSeconds > 0 || adWatchCount >= MAX_ADS_PER_DAY || isAdLoading}
-                animate={fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY && !isAdLoading ? { scale: [1, 1.02, 1], opacity: [0.9, 1, 0.9] } : {}}
+                animate={fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY && !isAdLoading ? { scale: [1, 1.05, 1], boxShadow: ["0px 0px 0px rgba(79,70,229,0)", "0px 0px 30px rgba(79,70,229,0.5)", "0px 0px 0px rgba(79,70,229,0)"] } : {}}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className={`w-full group p-4 rounded-[24px] font-black flex items-center justify-center gap-3 transition-all active:scale-[0.98] border-[3px] shadow-2xl relative overflow-hidden gpu-accel
+                className={`w-full group p-4 rounded-[24px] font-black flex items-center justify-center gap-3 transition-all active:scale-[0.98] border-[3px] shadow-2xl relative overflow-hidden
                   ${fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY && !isAdLoading
                     ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border-white/20'
                     : 'bg-slate-900/80 backdrop-blur-md text-slate-500 border-white/5 cursor-not-allowed'
@@ -411,7 +427,7 @@ const App: React.FC = () => {
         {activeTab === 'UPGRADE' && (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 flex flex-col min-h-0">
             <h2 className="text-3xl font-black mb-6 italic uppercase tracking-tighter text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)]">Gear<span className="text-indigo-400"> Shop</span></h2>
-            <div className="space-y-4 flex-1 overflow-y-auto pr-2 pb-24 overscroll-contain">
+            <div className="space-y-4 flex-1 overflow-y-auto pr-2 pb-32 no-scrollbar">
               {levels.slice(1).map((lvl) => (
                 <div key={lvl.level} className={`p-5 rounded-[32px] border-2 transition-all 
                   ${minerLevel >= lvl.level ? 'bg-indigo-950 border-indigo-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]' : 'bg-white border-white shadow-2xl'}
@@ -443,173 +459,169 @@ const App: React.FC = () => {
         )}
 
         {activeTab === 'FRIENDS' && (
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto pb-24 overscroll-contain">
-              <div className="mb-4">
-                <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white drop-shadow-lg bg-black/40 backdrop-blur-sm px-4 py-1 rounded-2xl inline-block">
-                  Referral<span className="text-indigo-400"> Power</span>
-                </h2>
-              </div>
-              <div className="bg-gradient-to-br from-blue-700 to-indigo-900 p-8 rounded-[40px] shadow-2xl mb-6 relative overflow-hidden border border-white/20">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full" />
-                <h3 className="text-xl font-black mb-2 drop-shadow-md uppercase italic tracking-tight">Recruit Miners, Earn $MAX</h3>
-                <p className="text-sm text-blue-100 mb-6 opacity-90 leading-relaxed font-bold drop-shadow-sm">
-                  Earn fixed $MAX tokens every time an ad is watched in your network. 5.0 MAX from direct refs, down to 0.5 MAX at Level 5.
-                </p>
-                <button onClick={copyInviteLink} className={`w-full py-4 font-black rounded-2xl transition-all active:scale-[0.98] uppercase tracking-widest text-xs shadow-xl ${copyFeedback ? 'bg-emerald-500 text-white' : 'bg-white text-indigo-950 hover:bg-blue-50'}`}>
-                  {copyFeedback ? 'LINK READY! ✅' : 'INVITE PARTNERS'}
-                </button>
-              </div>
-              <div className="bg-slate-900/50 backdrop-blur-md rounded-[32px] border border-white/10 overflow-hidden mb-6 shadow-2xl p-4 min-h-[150px] relative">
-                {loadingReferrals ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {[
-                      { level: 1, title: 'Level 1 (Direct)', yield: '+5.0 MAX/AD', key: 'level1', totalKey: 'totalLevel1' },
-                      { level: 2, title: 'Level 2 (Indirect)', yield: '+2.5 MAX/AD', key: 'level2', totalKey: 'totalLevel2' },
-                      { level: 3, title: 'Level 3 (Network)', yield: '+1.0 MAX/AD', key: 'level3', totalKey: 'totalLevel3' },
-                      { level: 4, title: 'Level 4 (Network)', yield: '+0.5 MAX/AD', key: 'level4', totalKey: 'totalLevel4' },
-                      { level: 5, title: 'Level 5 (Network)', yield: '+0.5 MAX/AD', key: 'level5', totalKey: 'totalLevel5' }
-                    ].map((tier) => {
-                      const isExpanded = expandedLevel === tier.level;
-                      const tierData = referrals?.[tier.key] || [];
-                      const tierTotal = referrals?.stats?.[tier.totalKey] || 0;
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 overflow-y-auto pb-32 no-scrollbar min-h-0">
+            <div className="mb-4">
+              <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white drop-shadow-lg bg-black/40 backdrop-blur-sm px-4 py-1 rounded-2xl inline-block">
+                Referral<span className="text-indigo-400"> Power</span>
+              </h2>
+            </div>
+            <div className="bg-gradient-to-br from-blue-700 to-indigo-900 p-8 rounded-[40px] shadow-2xl mb-6 relative overflow-hidden border border-white/20">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full" />
+              <h3 className="text-xl font-black mb-2 drop-shadow-md uppercase italic tracking-tight">Recruit Miners, Earn $MAX</h3>
+              <p className="text-sm text-blue-100 mb-6 opacity-90 leading-relaxed font-bold drop-shadow-sm">
+                Earn fixed $MAX tokens every time an ad is watched in your network. 5.0 MAX from direct refs, down to 0.5 MAX at Level 5.
+              </p>
+              <button onClick={copyInviteLink} className={`w-full py-4 font-black rounded-2xl transition-all active:scale-[0.98] uppercase tracking-widest text-xs shadow-xl ${copyFeedback ? 'bg-emerald-500 text-white' : 'bg-white text-indigo-950 hover:bg-blue-50'}`}>
+                {copyFeedback ? 'LINK READY! Γ£à' : 'INVITE PARTNERS'}
+              </button>
+            </div>
+            <div className="bg-slate-900/50 backdrop-blur-md rounded-[32px] border border-white/10 overflow-hidden mb-6 shadow-2xl p-4 min-h-[150px] relative">
+              {loadingReferrals ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {[
+                    { level: 1, title: 'Level 1 (Direct)', yield: '+5.0 MAX/AD', key: 'level1', totalKey: 'totalLevel1' },
+                    { level: 2, title: 'Level 2 (Indirect)', yield: '+2.5 MAX/AD', key: 'level2', totalKey: 'totalLevel2' },
+                    { level: 3, title: 'Level 3 (Network)', yield: '+1.0 MAX/AD', key: 'level3', totalKey: 'totalLevel3' },
+                    { level: 4, title: 'Level 4 (Network)', yield: '+0.5 MAX/AD', key: 'level4', totalKey: 'totalLevel4' },
+                    { level: 5, title: 'Level 5 (Network)', yield: '+0.5 MAX/AD', key: 'level5', totalKey: 'totalLevel5' }
+                  ].map((tier) => {
+                    const isExpanded = expandedLevel === tier.level;
+                    const tierData = referrals?.[tier.key] || [];
+                    const tierTotal = referrals?.stats?.[tier.totalKey] || 0;
 
-                      return (
-                        <div key={tier.level} className="bg-slate-950/80 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 shadow-lg">
-                          <button
-                            onClick={() => setExpandedLevel(isExpanded ? null : tier.level)}
-                            className={`w-full p-4 flex items-center justify-between transition-colors ${isExpanded ? 'bg-indigo-600/10' : 'hover:bg-white/5'}`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-white text-xs shadow-inner ${isExpanded ? 'bg-indigo-500' : 'bg-slate-800 border border-white/10'}`}>
-                                L{tier.level}
-                              </div>
-                              <div className="text-left">
-                                <div className="text-white font-black text-sm tracking-tight uppercase">{tier.title}</div>
-                                <div className="text-[10px] text-slate-400 font-bold mt-0.5">{tierTotal} Miners Active</div>
-                              </div>
+                    return (
+                      <div key={tier.level} className="bg-slate-950/80 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 shadow-lg">
+                        <button
+                          onClick={() => setExpandedLevel(isExpanded ? null : tier.level)}
+                          className={`w-full p-4 flex items-center justify-between transition-colors ${isExpanded ? 'bg-indigo-600/10' : 'hover:bg-white/5'}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-white text-xs shadow-inner ${isExpanded ? 'bg-indigo-500' : 'bg-slate-800 border border-white/10'}`}>
+                              L{tier.level}
                             </div>
-                            <div className="flex items-center gap-4">
-                              <div className="text-emerald-400 font-black text-[10px] bg-emerald-400/10 px-3 py-1.5 rounded-full border border-emerald-400/20 shadow-sm leading-none shrink-0">
-                                {tier.yield} YIELD
-                              </div>
-                              {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-500 shrink-0" /> : <ChevronDown className="w-5 h-5 text-slate-500 shrink-0" />}
+                            <div className="text-left">
+                              <div className="text-white font-black text-sm tracking-tight uppercase">{tier.title}</div>
+                              <div className="text-[10px] text-slate-400 font-bold mt-0.5">{tierTotal} Miners Active</div>
                             </div>
-                          </button>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-emerald-400 font-black text-[10px] bg-emerald-400/10 px-3 py-1.5 rounded-full border border-emerald-400/20 shadow-sm leading-none shrink-0">
+                              {tier.yield} YIELD
+                            </div>
+                            {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-500 shrink-0" /> : <ChevronDown className="w-5 h-5 text-slate-500 shrink-0" />}
+                          </div>
+                        </button>
 
-                          <AnimatePresence>
-                            {isExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden bg-black/20"
-                              >
-                                <div className="p-4 max-h-[250px] overflow-y-auto space-y-2 border-t border-white/5">
-                                  {tierData.length > 0 ? (
-                                    tierData.map((ref: any, idx: number) => (
-                                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-900/60 rounded-xl border border-white/5">
-                                        <div className="flex items-center gap-3">
-                                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-black text-white uppercase text-xs">
-                                            {ref.username.replace('@', '').charAt(0)}
-                                          </div>
-                                          <div>
-                                            <div className="text-slate-200 font-bold text-sm tracking-tight">{ref.username}</div>
-                                            <div className="text-[9px] text-indigo-400 font-black tracking-widest uppercase mt-0.5">Lv. {ref.minerLevel} Miner</div>
-                                          </div>
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden bg-black/20"
+                            >
+                              <div className="p-4 max-h-[250px] overflow-y-auto space-y-2 border-t border-white/5">
+                                {tierData.length > 0 ? (
+                                  tierData.map((ref: any, idx: number) => (
+                                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-900/60 rounded-xl border border-white/5">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-black text-white uppercase text-xs">
+                                          {ref.username.replace('@', '').charAt(0)}
                                         </div>
-                                        <div className="text-[9px] text-slate-500 uppercase font-black">
-                                          {new Date(ref.joinedAt).toLocaleDateString()}
+                                        <div>
+                                          <div className="text-slate-200 font-bold text-sm tracking-tight">{ref.username}</div>
+                                          <div className="text-[9px] text-indigo-400 font-black tracking-widest uppercase mt-0.5">Lv. {ref.minerLevel} Miner</div>
                                         </div>
                                       </div>
-                                    ))
-                                  ) : (
-                                    <div className="text-center py-6 text-slate-500 text-xs font-bold italic">
-                                      No recruits at this level yet.
+                                      <div className="text-[9px] text-slate-500 uppercase font-black">
+                                        {new Date(ref.joinedAt).toLocaleDateString()}
+                                      </div>
                                     </div>
-                                  )}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              <div className="p-5 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-white/5 text-[10px] text-slate-300/80 italic text-center leading-relaxed">
-                * Passive income is calculated per individual ad impression within your hierarchy. Multi-level networking exponentially increases your yield.
-              </div>
+                                  ))
+                                ) : (
+                                  <div className="text-center py-6 text-slate-500 text-xs font-bold italic">
+                                    No recruits at this level yet.
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="p-5 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-white/5 text-[10px] text-slate-300/80 italic text-center leading-relaxed">
+              * Passive income is calculated per individual ad impression within your hierarchy. Multi-level networking exponentially increases your yield.
             </div>
           </motion.div>
         )}
 
         {activeTab === 'WALLET' && (
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto pb-24 overscroll-contain">
-              <h2 className="text-3xl font-black mb-6 italic uppercase tracking-tighter text-white drop-shadow-lg">Bank<span className="text-indigo-400"> vault</span></h2>
-              <div className="bg-blue-950/70 backdrop-blur-xl border border-white/20 p-8 rounded-[40px] mb-6 relative overflow-hidden shadow-2xl">
-                <h3 className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-6 drop-shadow-sm text-center">Currency Exchange</h3>
-                <div className="flex items-center justify-between bg-black/40 p-5 rounded-[30px] mb-6 border border-white/5">
-                  <div className="text-center flex-1">
-                    <div className="text-[10px] text-indigo-400 font-black uppercase mb-1">PAY GOLD</div>
-                    <div className="text-2xl font-black text-white">5,000</div>
-                  </div>
-                  <div className="px-4"><ArrowRight className="text-indigo-500" size={24} /></div>
-                  <div className="text-center flex-1">
-                    <div className="text-[10px] text-sky-400 font-black uppercase mb-1">GET $MAX</div>
-                    <div className="text-2xl font-black text-white">4.0</div>
-                  </div>
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 flex flex-col">
+            <h2 className="text-3xl font-black mb-6 italic uppercase tracking-tighter text-white drop-shadow-lg">Bank<span className="text-indigo-400"> vault</span></h2>
+            <div className="bg-blue-950/70 backdrop-blur-xl border border-white/20 p-8 rounded-[40px] mb-6 relative overflow-hidden shadow-2xl">
+              <h3 className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-6 drop-shadow-sm text-center">Currency Exchange</h3>
+              <div className="flex items-center justify-between bg-black/40 p-5 rounded-[30px] mb-6 border border-white/5">
+                <div className="text-center flex-1">
+                  <div className="text-[10px] text-indigo-400 font-black uppercase mb-1">PAY GOLD</div>
+                  <div className="text-2xl font-black text-white">5,000</div>
                 </div>
-                <button
-                  onClick={convertGoldToMax}
-                  disabled={goldBalance < 5000 || isConverting}
-                  className={`w-full py-4 rounded-2xl font-black transition-all shadow-xl uppercase tracking-widest text-xs flex items-center justify-center gap-2
+                <div className="px-4"><ArrowRight className="text-indigo-500" size={24} /></div>
+                <div className="text-center flex-1">
+                  <div className="text-[10px] text-sky-400 font-black uppercase mb-1">GET $MAX</div>
+                  <div className="text-2xl font-black text-white">4.0</div>
+                </div>
+              </div>
+              <button
+                onClick={convertGoldToMax}
+                disabled={goldBalance < 5000 || isConverting}
+                className={`w-full py-4 rounded-2xl font-black transition-all shadow-xl uppercase tracking-widest text-xs flex items-center justify-center gap-2
                   ${goldBalance >= 5000 && !isConverting ? 'bg-indigo-500 text-white hover:bg-indigo-400' : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border border-white/5'}`}
-                >
-                  {isConverting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      PROCESSING...
-                    </>
-                  ) : (
-                    'SWAP CURRENCY'
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {conversionResult && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className={`mt-4 p-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest border
-                      ${conversionResult.success ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}
-                    >
-                      {conversionResult.message}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              <div className="bg-gradient-to-br from-slate-900/90 to-blue-950/90 backdrop-blur-2xl border border-white/10 p-8 rounded-[40px] mb-8 text-center shadow-2xl">
-                <p className="text-indigo-200/60 text-[10px] uppercase font-black tracking-widest mb-2">Available Tokens</p>
-                <div className="text-6xl font-black mb-8 text-white drop-shadow-2xl">{maxBalance.toFixed(1)} <span className="text-indigo-400 text-xl font-bold italic lowercase">$max</span></div>
-                {!isConnected ? (
-                  <ConnectButton.Custom>
-                    {({ openConnectModal }) => (
-                      <button onClick={openConnectModal} className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-blue-950/40 uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-95 transition-all">LINK EXTERNAL WALLET</button>
-                    )}
-                  </ConnectButton.Custom>
+              >
+                {isConverting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    PROCESSING...
+                  </>
                 ) : (
-                  <button disabled={maxBalance < 1000} onClick={() => { const address = prompt("Enter BSC Wallet Address:"); if (address && maxBalance >= 1000) handleWithdrawal(1000, address); }} className={`w-full py-5 rounded-2xl font-black transition-all shadow-xl uppercase tracking-widest text-xs ${maxBalance >= 1000 ? 'bg-white text-indigo-950 hover:bg-blue-50' : 'bg-slate-900/50 text-slate-500 border border-white/5'}`}>INITIATE WITHDRAWAL (1.0K+)</button>
+                  'SWAP CURRENCY'
                 )}
-              </div>
+              </button>
+
+              <AnimatePresence>
+                {conversionResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className={`mt-4 p-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest border
+                      ${conversionResult.success ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}
+                  >
+                    {conversionResult.message}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <div className="bg-gradient-to-br from-slate-900/90 to-blue-950/90 backdrop-blur-2xl border border-white/10 p-8 rounded-[40px] mb-8 text-center shadow-2xl">
+              <p className="text-indigo-200/60 text-[10px] uppercase font-black tracking-widest mb-2">Available Tokens</p>
+              <div className="text-6xl font-black mb-8 text-white drop-shadow-2xl">{maxBalance.toFixed(1)} <span className="text-indigo-400 text-xl font-bold italic lowercase">$max</span></div>
+              {!isConnected ? (
+                <ConnectButton.Custom>
+                  {({ openConnectModal }) => (
+                    <button onClick={openConnectModal} className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-blue-950/40 uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-95 transition-all">LINK EXTERNAL WALLET</button>
+                  )}
+                </ConnectButton.Custom>
+              ) : (
+                <button disabled={maxBalance < 1000} onClick={() => { const address = prompt("Enter BSC Wallet Address:"); if (address && maxBalance >= 1000) handleWithdrawal(1000, address); }} className={`w-full py-5 rounded-2xl font-black transition-all shadow-xl uppercase tracking-widest text-xs ${maxBalance >= 1000 ? 'bg-white text-indigo-950 hover:bg-blue-50' : 'bg-slate-900/50 text-slate-500 border border-white/5'}`}>INITIATE WITHDRAWAL (1.0K+)</button>
+              )}
             </div>
           </motion.div>
         )}
@@ -648,6 +660,15 @@ const App: React.FC = () => {
       </div>
 
       <AnimatePresence>
+        {showAdminView && profile && (
+          <AdminView
+            onClose={() => setShowAdminView(false)}
+            userRole={profile.role}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {!!lootboxData && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md">
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="bg-slate-900 border border-slate-800 p-8 rounded-[40px] w-full max-w-sm flex flex-col items-center relative overflow-hidden shadow-2xl">
@@ -658,7 +679,13 @@ const App: React.FC = () => {
 
               <div className="relative z-10 flex flex-col items-center">
                 <h2 className="text-2xl font-black mb-1 text-white uppercase italic text-center">{lootboxData.label}</h2>
-                <div className="text-[100px] my-6 drop-shadow-lg">{lootboxData.type === 'GOLD' ? '🪙' : '💎'}</div>
+                <div className="my-10 drop-shadow-[0_0_35px_rgba(251,191,36,0.4)] bg-white/5 p-8 rounded-full border border-white/10">
+                  {lootboxData.type === 'GOLD' ? (
+                    <Coins className="w-24 h-24 text-amber-500" />
+                  ) : (
+                    <Star className="w-24 h-24 text-indigo-400" />
+                  )}
+                </div>
                 <div className="text-4xl font-black text-white mb-8">+{lootboxData.amount.toLocaleString()}</div>
                 <button onClick={() => setLootboxData(null)} className="w-full py-4 bg-white text-slate-950 font-black rounded-2xl shadow-lg hover:bg-slate-100 transition-colors">COLLECT</button>
               </div>
@@ -679,10 +706,11 @@ const App: React.FC = () => {
               <div className="relative z-10 w-full flex flex-col items-center">
                 <h1 className="text-xl font-black text-amber-500 uppercase mb-6 italic">Loyalty Bonus</h1>
                 <div className="w-full bg-slate-800/90 backdrop-blur-sm p-4 rounded-xl mb-6 flex flex-col gap-2 border border-slate-700/50">
-                  <div className="flex justify-between text-xs"><span>Account status:</span><span className="font-bold text-sky-400 uppercase">Veteran</span></div>
-                  <div className="flex justify-between text-xs"><span>Reward:</span><span className="text-amber-500 font-black">Level {tltInfo?.finalLevel || 0} Upgrade</span></div>
+                  <div className="flex justify-between text-xs text-slate-300"><span>Account Tier:</span><span className="font-bold text-sky-400 capitalize">{tltInfo.tierName}</span></div>
+                  <div className="flex justify-between text-xs text-slate-300"><span>Miner Reward:</span><span className="text-amber-500 font-black">Level {tltInfo.level}</span></div>
+                  <div className="flex justify-between text-xs text-slate-300"><span>Gold Reward:</span><span className="text-amber-500 font-black">+{tltInfo.bonusGold.toLocaleString()}</span></div>
                 </div>
-                <button onClick={() => setShowTltModal(false)} className="w-full py-4 bg-amber-500 text-slate-950 font-black rounded-xl uppercase tracking-widest shadow-lg shadow-amber-500/20 hover:bg-amber-400">Start Mining</button>
+                <button onClick={() => setShowTltModal(false)} className="w-full py-4 bg-amber-500 text-slate-950 font-black rounded-xl uppercase tracking-widest shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition-all active:scale-95">START MINING</button>
               </div>
             </motion.div>
           </motion.div>

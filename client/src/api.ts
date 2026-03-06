@@ -97,6 +97,59 @@ class Api {
             body: JSON.stringify({ amount, walletAddress })
         });
     }
+
+    // --- ADMIN API ENDPOINTS ---
+
+    async getAdminStats() {
+        return this.request('/admin/stats');
+    }
+
+    async getAdminUsers(page = 1, limit = 50, search = '') {
+        const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+        if (search) query.append('search', search);
+        return this.request(`/admin/users?${query.toString()}`);
+    }
+
+    async adminAdjustBalance(userId: string, type: 'GOLD' | 'MAX', amount: number) {
+        return this.request(`/admin/users/${userId}/adjust`, {
+            method: 'POST',
+            body: JSON.stringify({ type, amount })
+        });
+    }
+
+    async adminSetLevel(userId: string, level: number) {
+        return this.request(`/admin/users/${userId}/level`, {
+            method: 'POST',
+            body: JSON.stringify({ level })
+        });
+    }
+
+    async adminToggleBan(userId: string, isBanned: boolean) {
+        return this.request(`/admin/users/${userId}/ban`, {
+            method: 'POST',
+            body: JSON.stringify({ isBanned })
+        });
+    }
+
+    // --- SUPER ADMIN ENDPOINTS ---
+
+    async adminSetRole(userId: string, role: 'PLAYER' | 'ADMIN') {
+        return this.request(`/admin/users/${userId}/role`, {
+            method: 'POST',
+            body: JSON.stringify({ role })
+        });
+    }
+
+    async getAdminConfig() {
+        return this.request('/admin/config');
+    }
+
+    async adminUpdateConfig(data: { maintenanceMode?: boolean, goldToMaxRate?: number }) {
+        return this.request('/admin/config', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
 }
 
 export const api = new Api();

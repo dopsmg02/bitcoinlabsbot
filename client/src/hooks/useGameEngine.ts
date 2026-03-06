@@ -13,6 +13,7 @@ export function useGameEngine() {
     const [initError, setInitError] = useState<string | null>(null);
     const [isAdLoading, setIsAdLoading] = useState(false); // [PHASE 9 FIX] Track SDK loading
     const [isConverting, setIsConverting] = useState(false); // [PHASE 10 FIX] Track conversion process
+    const [registrationBonus, setRegistrationBonus] = useState<any>(null); // New account metadata
 
     const lastSyncTimeRef = useRef(Date.now());
 
@@ -36,6 +37,11 @@ export function useGameEngine() {
             if (!loginRes.success) {
                 setInitError(loginRes.error || "Login failed");
                 return;
+            }
+
+            // [REGISTRATION NOTIFICATION FIX] Capture bonus details
+            if (loginRes.isNewUser && loginRes.tlt) {
+                setRegistrationBonus(loginRes.tlt);
             }
 
             // [PHASE 12 FIX] Resume pending ad claim after page reload
@@ -321,6 +327,8 @@ export function useGameEngine() {
         isConverting,
         claimGold,
         isClaiming,
-        unclaimedGold
+        unclaimedGold,
+        registrationBonus,
+        setRegistrationBonus
     };
 }

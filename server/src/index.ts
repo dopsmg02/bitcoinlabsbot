@@ -24,6 +24,7 @@ import userRoutes from './routes/user.routes';
 import adRoutes from './routes/ad.routes';
 import mineRoutes from './routes/mine.routes';
 import economyRoutes from './routes/economy.routes';
+import adminRoutes from './routes/admin.routes';
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -31,6 +32,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/ad', adRoutes);
 app.use('/api/mine', mineRoutes);
 app.use('/api/economy', economyRoutes);
+app.use('/api/admin', adminRoutes);
 
 // [SENIOR SECURITY AUDIT NOTE - FIXED ROUTING]
 // Previously mounted straight to `/health`, causing 404s when pinged via Vercel proxy.

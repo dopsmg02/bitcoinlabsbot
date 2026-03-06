@@ -99,12 +99,12 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
             });
         }
 
+        const tltResult = calculateTLT(userIdStr, isPremium);
+        const isNewUser = !user;
+
         if (!user) {
             // NEW USER = TELEGRAM LOYALTY TIER (TLT) LOGIC
-            const { level: startingLevel, bonusGold } = calculateTLT(userIdStr, isPremium);
-
             // Referral: only need direct self-ref check + existence check
-            // (circular chain is impossible for a new user that doesn't exist in DB yet)
             let validReferrerId: string | null = null;
             if (referrerId && typeof referrerId === 'string' && referrerId !== userIdStr) {
                 const referrerExists = await prisma.user.findUnique({ where: { id: referrerId } });
@@ -116,10 +116,10 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
             user = await prisma.user.create({
                 data: {
                     id: userIdStr,
-                    telegramUsername: tgUser.username || null,
+                    telegramUsername: tgUser.username ? `@${tgUser.username}` : null,
                     isPremium: isPremium,
-                    minerLevel: startingLevel,
-                    goldBalance: BigInt(bonusGold),
+                    minerLevel: tltResult.level,
+                    goldBalance: BigInt(tltResult.bonusGold),
                     referrerId: validReferrerId,
                     lastLoginIp: clientIp
                 }
@@ -138,11 +138,16 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
             token,
             user: {
                 id: user.id,
+                telegramUsername: user.telegramUsername,
+                isPremium: user.isPremium,
+                role: user.role,
                 minerLevel: user.minerLevel,
                 goldBalance: user.goldBalance.toString(),
                 maxBalance: user.maxBalance,
-                isNew: !user.lastAdWatch // New user has never watched an ad
-            }
+                isNew: isNewUser
+            },
+            isNewUser,
+            tlt: tltResult
         });
 
     } catch (error) {
