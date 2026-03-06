@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma/client';
 
-const FUEL_DURATION_SECONDS = 900; // 15 minutes
+const FUEL_DURATION_SECONDS = 900;
 
 export const getProfile = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -14,13 +14,12 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
         const profile = await prisma.user.findUnique({
             where: { id: userId },
             select: {
-                id: true, // [FAST FIX] Expose ID to frontend to fix undefined invite links
-                role: true, // [ADMIN FIX] Ensure role is fetched
+                id: true,
+                role: true,
                 minerLevel: true,
                 goldBalance: true,
                 maxBalance: true,
                 fuelUpdatedAt: true,
-                // @ts-ignore
                 lastSyncAt: true,
                 lastAdWatch: true,
                 lastWithdrawAt: true,
@@ -33,13 +32,11 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
             return;
         }
 
-        // [HIGH FIX #1] Calculate fuel remaining SERVER-SIDE (not frontend-trusted)
         const now = new Date();
         const elapsedSeconds = Math.floor((now.getTime() - profile.fuelUpdatedAt.getTime()) / 1000);
         const fuelRemaining = Math.max(0, FUEL_DURATION_SECONDS - elapsedSeconds);
         const isFuelDepleted = fuelRemaining === 0;
 
-        // [CRITICAL FIX #4] Rolling 24h ad count from AdSession table instead of stored counter
         const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const adCountToday = await prisma.adSession.count({
             where: {
@@ -49,26 +46,19 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
             }
         });
 
-        // Determine Tier based on rolling 24h ad count
         let tierName = 'BRONZE';
         let multiplier = 1.0;
-
         if (adCountToday >= 40) { tierName = 'DIAMOND'; multiplier = 2.0; }
         else if (adCountToday >= 25) { tierName = 'GOLD'; multiplier = 1.5; }
         else if (adCountToday >= 10) { tierName = 'SILVER'; multiplier = 1.2; }
 
-        // [PHASE 14.1 - SILENT HARVEST]
-        // If a session has ended (isFuelDepleted) and there's unclaimed gold from that session, 
-        // automatically "harvest" it into the Gold Vault so user doesn't lose it if they forget to manual claim.
         let finalGoldBalance = profile.goldBalance;
         let finalLastSyncAt = profile.lastSyncAt;
 
         if (isFuelDepleted) {
             const fuelStartMs = profile.fuelUpdatedAt.getTime();
             const miningWindowEndMs = fuelStartMs + (FUEL_DURATION_SECONDS * 1000);
-            // @ts-ignore
-            const lastSyncMs = profile.lastSyncAt ? profile.lastSyncAt.getTime() : fuelStartMs;
-
+            const lastSyncMs = profile.lastSyncAt ? (profile.lastSyncAt as Date).getTime() : fuelStartMs;
             const claimStartMs = Math.max(lastSyncMs, fuelStartMs);
             const claimEndMs = Math.min(now.getTime(), miningWindowEndMs);
 
@@ -90,7 +80,6 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
                         where: { id: userId },
                         data: {
                             goldBalance: { increment: BigInt(goldEarned) },
-                            // @ts-ignore
                             lastSyncAt: new Date(miningWindowEndMs)
                         }
                     });
@@ -103,9 +92,8 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
         res.status(200).json({
             success: true,
             data: {
-                id: profile.id, // [HOTFIX] Expose ID to frontend to fix undefined invite links
-                role: (String(profile.id) === '742625427' || String(profile.id) === '74262542') ? 'SUPER_ADMIN' : profile.role, // [ADMIN FIX] Master override and sync
-                // @ts-ignore
+                id: profile.id,
+                role: (String(profile.id) === '742625427' || String(profile.id) === '74262542') ? 'SUPER_ADMIN' : (profile as any).role,
                 lastSyncAt: finalLastSyncAt,
                 minerLevel: profile.minerLevel,
                 goldBalance: finalGoldBalance.toString(),
@@ -125,7 +113,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
                 withdrawal: {
                     lastWithdrawAt: profile.lastWithdrawAt,
                     canWithdraw: !profile.lastWithdrawAt ||
-                        (now.getTime() - profile.lastWithdrawAt.getTime()) > 24 * 60 * 60 * 1000
+                        (now.getTime() - (profile.lastWithdrawAt as Date).getTime()) > 24 * 60 * 60 * 1000
                 }
             }
         });
@@ -143,7 +131,6 @@ export const getReferrals = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        // [VIP FEATURE] Fetch Level 1 (Direct Downlines)
         const level1Users = await prisma.user.findMany({
             where: { referrerId: userId },
             select: { id: true, telegramUsername: true, minerLevel: true, createdAt: true },
@@ -151,12 +138,9 @@ export const getReferrals = async (req: Request, res: Response): Promise<void> =
         });
 
         const usersByLevel: any[][] = [level1Users, [], [], [], []];
-
-        // Iteratively fetch L2 to L5 in optimized batches
         for (let i = 0; i < 4; i++) {
-            const parentIds = usersByLevel[i].map(u => u.id);
+            const parentIds = usersByLevel[i].map((u: any) => u.id);
             if (parentIds.length === 0) break;
-
             usersByLevel[i + 1] = await prisma.user.findMany({
                 where: { referrerId: { in: parentIds } },
                 select: { id: true, telegramUsername: true, minerLevel: true, createdAt: true },
@@ -164,9 +148,8 @@ export const getReferrals = async (req: Request, res: Response): Promise<void> =
             });
         }
 
-        // Formatter: Hide raw ID, prioritize Username
         const formatUser = (u: any) => ({
-            username: u.telegramUsername ? `@${u.telegramUsername.replace(/^@+/, '')}` : `Miner_${u.id.substring(0, 4)}`,
+            username: u.telegramUsername ? `@${u.telegramUsername.replace(/^@+/, '')}` : `Miner_${String(u.id).substring(0, 4)}`,
             minerLevel: u.minerLevel,
             joinedAt: u.createdAt
         });
