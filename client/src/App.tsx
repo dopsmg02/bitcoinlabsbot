@@ -42,8 +42,12 @@ const App: React.FC = () => {
     convertGold,
     upgradeLevel,
     simulateDevLogin,
-    initError
+    initError,
+    isAdLoading,
+    isConverting
   } = useGameEngine();
+
+  const [conversionResult, setConversionResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const maxFuelSeconds = 15 * 60;
   const MAX_ADS_PER_DAY = 50;
@@ -104,7 +108,15 @@ const App: React.FC = () => {
 
   const convertGoldToMax = async () => {
     if (goldBalance >= 5000) {
-      await convertGold(5000);
+      const result = await convertGold(5000);
+      if (result) {
+        setConversionResult({
+          success: result.success,
+          message: result.success ? "Successfully converted 5,000 Gold to 4.0 $MAX!" : (result.error || "Conversion failed")
+        });
+        // Auto-hide result after 4 seconds
+        setTimeout(() => setConversionResult(null), 4000);
+      }
     }
   };
 
@@ -340,11 +352,11 @@ const App: React.FC = () => {
 
               <motion.button
                 onClick={refuel}
-                disabled={fuelSeconds > 0 || adWatchCount >= MAX_ADS_PER_DAY}
-                animate={fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY ? { scale: [1, 1.05, 1], boxShadow: ["0px 0px 0px rgba(79,70,229,0)", "0px 0px 30px rgba(79,70,229,0.5)", "0px 0px 0px rgba(79,70,229,0)"] } : {}}
+                disabled={fuelSeconds > 0 || adWatchCount >= MAX_ADS_PER_DAY || isAdLoading}
+                animate={fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY && !isAdLoading ? { scale: [1, 1.05, 1], boxShadow: ["0px 0px 0px rgba(79,70,229,0)", "0px 0px 30px rgba(79,70,229,0.5)", "0px 0px 0px rgba(79,70,229,0)"] } : {}}
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className={`w-full group p-4 rounded-[24px] font-black flex items-center justify-center gap-3 transition-all active:scale-[0.98] border-[3px] shadow-2xl relative overflow-hidden
-                  ${fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY
+                  ${fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY && !isAdLoading
                     ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border-white/20'
                     : 'bg-slate-900/80 backdrop-blur-md text-slate-500 border-white/5 cursor-not-allowed'
                   }`}
@@ -352,13 +364,18 @@ const App: React.FC = () => {
                 {/* Glossy Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-50 pointer-events-none" />
 
-                <PlayCircle size={32} className={fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY ? "animate-pulse shadow-lg rounded-full" : ""} />
+                {isAdLoading ? (
+                  <Loader2 size={32} className="animate-spin text-white shadow-lg rounded-full" />
+                ) : (
+                  <PlayCircle size={32} className={fuelSeconds === 0 && adWatchCount < MAX_ADS_PER_DAY ? "animate-pulse shadow-lg rounded-full" : ""} />
+                )}
+
                 <div className="text-left relative z-10">
                   <div className="text-[10px] opacity-90 uppercase tracking-[0.2em] font-black text-indigo-200">
-                    {adWatchCount >= MAX_ADS_PER_DAY ? 'Limit Reached' : fuelSeconds > 0 ? 'Rig Online' : 'Action Required'}
+                    {adWatchCount >= MAX_ADS_PER_DAY ? 'Limit Reached' : fuelSeconds > 0 ? 'Rig Online' : isAdLoading ? 'Awaiting Ad...' : 'Action Required'}
                   </div>
                   <div className="text-2xl leading-tight uppercase font-black tracking-tight drop-shadow-md">
-                    {adWatchCount >= MAX_ADS_PER_DAY ? 'Daily Max' : fuelSeconds > 0 ? formatTime(fuelSeconds) : 'START MINING'}
+                    {adWatchCount >= MAX_ADS_PER_DAY ? 'Daily Max' : fuelSeconds > 0 ? formatTime(fuelSeconds) : isAdLoading ? 'LOAD AD...' : 'START MINING'}
                   </div>
                 </div>
               </motion.button>
@@ -411,7 +428,7 @@ const App: React.FC = () => {
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full" />
               <h3 className="text-xl font-black mb-2 drop-shadow-md uppercase italic tracking-tight">Recruit Miners, Earn $MAX</h3>
               <p className="text-sm text-blue-100 mb-6 opacity-90 leading-relaxed font-bold drop-shadow-sm">
-                Earn passive $MAX from every block mined in your network. 10% from direct refs, down to 1% at Level 5.
+                Earn fixed $MAX tokens every time an ad is watched in your network. 5.0 MAX from direct refs, down to 0.5 MAX at Level 5.
               </p>
               <button onClick={copyInviteLink} className={`w-full py-4 font-black rounded-2xl transition-all active:scale-[0.98] uppercase tracking-widest text-xs shadow-xl ${copyFeedback ? 'bg-emerald-500 text-white' : 'bg-white text-indigo-950 hover:bg-blue-50'}`}>
                 {copyFeedback ? 'LINK READY! ✅' : 'INVITE PARTNERS'}
@@ -425,11 +442,11 @@ const App: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {[
-                    { level: 1, title: 'Level 1 (Direct)', yield: '10%', key: 'level1', totalKey: 'totalLevel1' },
-                    { level: 2, title: 'Level 2 (Indirect)', yield: '5%', key: 'level2', totalKey: 'totalLevel2' },
-                    { level: 3, title: 'Level 3 (Network)', yield: '2%', key: 'level3', totalKey: 'totalLevel3' },
-                    { level: 4, title: 'Level 4 (Network)', yield: '1%', key: 'level4', totalKey: 'totalLevel4' },
-                    { level: 5, title: 'Level 5 (Network)', yield: '1%', key: 'level5', totalKey: 'totalLevel5' }
+                    { level: 1, title: 'Level 1 (Direct)', yield: '+5.0 MAX/AD', key: 'level1', totalKey: 'totalLevel1' },
+                    { level: 2, title: 'Level 2 (Indirect)', yield: '+2.5 MAX/AD', key: 'level2', totalKey: 'totalLevel2' },
+                    { level: 3, title: 'Level 3 (Network)', yield: '+1.0 MAX/AD', key: 'level3', totalKey: 'totalLevel3' },
+                    { level: 4, title: 'Level 4 (Network)', yield: '+0.5 MAX/AD', key: 'level4', totalKey: 'totalLevel4' },
+                    { level: 5, title: 'Level 5 (Network)', yield: '+0.5 MAX/AD', key: 'level5', totalKey: 'totalLevel5' }
                   ].map((tier) => {
                     const isExpanded = expandedLevel === tier.level;
                     const tierData = referrals?.[tier.key] || [];
@@ -522,7 +539,35 @@ const App: React.FC = () => {
                   <div className="text-2xl font-black text-white">4.0</div>
                 </div>
               </div>
-              <button onClick={convertGoldToMax} disabled={goldBalance < 5000} className={`w-full py-4 rounded-2xl font-black transition-all shadow-xl uppercase tracking-widest text-xs ${goldBalance >= 5000 ? 'bg-indigo-500 text-white hover:bg-indigo-400' : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border border-white/5'}`}>SWAP CURRENCY</button>
+              <button
+                onClick={convertGoldToMax}
+                disabled={goldBalance < 5000 || isConverting}
+                className={`w-full py-4 rounded-2xl font-black transition-all shadow-xl uppercase tracking-widest text-xs flex items-center justify-center gap-2
+                  ${goldBalance >= 5000 && !isConverting ? 'bg-indigo-500 text-white hover:bg-indigo-400' : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border border-white/5'}`}
+              >
+                {isConverting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    PROCESSING...
+                  </>
+                ) : (
+                  'SWAP CURRENCY'
+                )}
+              </button>
+
+              <AnimatePresence>
+                {conversionResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className={`mt-4 p-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest border
+                      ${conversionResult.success ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}
+                  >
+                    {conversionResult.message}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             <div className="bg-gradient-to-br from-slate-900/90 to-blue-950/90 backdrop-blur-2xl border border-white/10 p-8 rounded-[40px] mb-8 text-center shadow-2xl">
               <p className="text-indigo-200/60 text-[10px] uppercase font-black tracking-widest mb-2">Available Tokens</p>

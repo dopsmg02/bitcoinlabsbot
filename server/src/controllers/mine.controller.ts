@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma/client';
 
-export const syncProgress = async (req: Request, res: Response): Promise<void> => {
+export const syncMining = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.user?.id;
-        const { goldEarned, lastFuelUpdate } = req.body;
+        const { claimedGold, lastSyncTimestamp } = req.body;
 
         if (!userId) {
             res.status(401).json({ error: 'Unauthorized' });
@@ -23,13 +23,13 @@ export const syncProgress = async (req: Request, res: Response): Promise<void> =
         else if (adCount >= 25) speedMultiplier = 2.0;
         else if (adCount >= 10) speedMultiplier = 1.5;
 
-        // [PHASE 9 FIX] Absolute Sync Repair: Trust the client's gold calculation.
-        // Removed `sanitizedGold` rollback which caused the 1200 gold vs 8000 gold mismatch.
+        // [PHASE 10 FIX] Absolute Sync Repair: Standardized payload names
+        // Matched { claimedGold, lastSyncTimestamp } with frontend api.ts
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
-                goldBalance: { increment: Number(goldEarned) },
-                fuelUpdatedAt: new Date(lastFuelUpdate)
+                goldBalance: { increment: Number(claimedGold) },
+                fuelUpdatedAt: new Date(lastSyncTimestamp)
             }
         });
 

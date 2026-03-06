@@ -11,6 +11,8 @@ export function useGameEngine() {
     // Mystery Box State (pass to UI)
     const [lootboxData, setLootboxData] = useState<any>(null);
     const [initError, setInitError] = useState<string | null>(null);
+    const [isAdLoading, setIsAdLoading] = useState(false); // [PHASE 9 FIX] Track SDK loading
+    const [isConverting, setIsConverting] = useState(false); // [PHASE 10 FIX] Track conversion process
 
     const lastSyncTimeRef = useRef(Date.now());
 
@@ -146,6 +148,8 @@ export function useGameEngine() {
     }, [profile, unclaimedGold]);
 
     const requestAdAndRefuel = async () => {
+        if (isAdLoading) return false;
+        setIsAdLoading(true);
         try {
             const res = await api.requestAd();
             if (res.success && res.sessionId) {
@@ -154,15 +158,27 @@ export function useGameEngine() {
                 const preGold = Number(profile.goldBalance);
                 const preMax = Number(profile.maxBalance);
 
-                // 🚀 MONETAG REAL AD INTEGRATION
-                // Open real Ad Link in a new tab with telegram_id and session_id tracking
-                const monetagDirectLink = 'https://omg10.com/4/10688253';
+                // 🚀 MONETAG IN-APP VIDEO INTEGRATION
+                // Trigger the SDK function injected in index.html, not a new tab.
                 const telegramId = profile.id || 'unknown';
-                const adUrl = `${monetagDirectLink}?telegram_id=${telegramId}&request_var=${res.sessionId}`;
 
-                window.open(adUrl, '_blank');
+                if (typeof (window as any).show_10685393 === 'function') {
+                    // Start the video ad. Monetag SDK supports the same S2S tracking format via an object payload
+                    (window as any).show_10685393({
+                        custom: res.sessionId,   // Matches our Postback `{request_var}`
+                        uid: telegramId          // Matches our Postback `{telegram_id}`
+                    }).then(() => {
+                        console.log("Monetag SDK: Ad video started or finished");
+                    }).catch((error: Error) => {
+                        console.error("Monetag SDK Error:", error);
+                        // Fallback: If ad blocker intercepts, user doesn't get fuel.
+                    });
+                } else {
+                    console.error("Monetag SDK show_10685393 is not loaded.");
+                }
 
                 // Poll server every 3 seconds to check if Monetag Webhook arrived (Max 1 minute)
+                // We keep polling because we rely on the S2S secure postback for rewards.
                 let pollAttempts = 0;
                 const maxAttempts = 20; // 3 sec * 20 = 60 seconds max
 
@@ -200,25 +216,39 @@ export function useGameEngine() {
                             // Stop polling if user abandoned the ad or it failed
                             clearInterval(pollInterval);
                             console.log("Ad validation timed out.");
+                            setIsAdLoading(false);
                         }
+                    } else if (pollAttempts >= maxAttempts) {
+                        clearInterval(pollInterval);
+                        setIsAdLoading(false);
                     }
                 }, 3000); // Poll every 3 seconds
 
                 return true;
+            } else {
+                setIsAdLoading(false);
+                return false;
             }
         } catch (e: any) {
             console.error("Ad Request Failed:", e);
             alert(e.message || "Failed to start Ad");
+            setIsAdLoading(false);
             return false;
         }
     };
 
     const convertGold = async (amount: number) => {
+        if (isConverting) return;
+        setIsConverting(true);
         try {
             await api.convertGoldToMax(amount);
             await refreshProfile(); // Refresh balances
+            return { success: true };
         } catch (e: any) {
-            alert(e.message || "Conversion failed");
+            console.error("Conversion Error:", e);
+            return { success: false, error: e.message || "Conversion failed" };
+        } finally {
+            setIsConverting(false);
         }
     };
 
@@ -260,6 +290,8 @@ export function useGameEngine() {
         requestAdAndRefuel,
         convertGold,
         upgradeLevel,
-        simulateDevLogin
+        simulateDevLogin,
+        isAdLoading,
+        isConverting
     };
 }
