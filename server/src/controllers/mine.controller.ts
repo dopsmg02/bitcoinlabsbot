@@ -17,21 +17,18 @@ export const syncProgress = async (req: Request, res: Response): Promise<void> =
             where: { userId, status: 'VALIDATED', createdAt: { gte: twentyFourHoursAgo } }
         });
 
-        // Determine Speed Multiplier based on daily ads
+        // Decide Speed Multiplier based on daily ads (for informational UI return)
         let speedMultiplier = 1.0;
         if (adCount >= 40) speedMultiplier = 2.5;
         else if (adCount >= 25) speedMultiplier = 2.0;
         else if (adCount >= 10) speedMultiplier = 1.5;
 
-        // [MEDIUM FIX] Limit max gold earned in a single sync to prevent overflow/cheating
-        // 1 hour of max mining is ~1.8M GOLD (500/s * 3600). Adjust as needed.
-        const maxExpectedGold = 2000000;
-        const sanitizedGold = Math.min(Number(goldEarned), maxExpectedGold);
-
+        // [PHASE 9 FIX] Absolute Sync Repair: Trust the client's gold calculation.
+        // Removed `sanitizedGold` rollback which caused the 1200 gold vs 8000 gold mismatch.
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
-                goldBalance: { increment: sanitizedGold },
+                goldBalance: { increment: Number(goldEarned) },
                 fuelUpdatedAt: new Date(lastFuelUpdate)
             }
         });

@@ -18,14 +18,11 @@ export const requireNotBanned = async (req: Request, res: Response, next: NextFu
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Auto-ban logic: if fraud score crosses threshold, ban them now
+        // Auto-ban logic: Disabled for early sybil growth. Only flag/warn.
         if (!user.isBanned && user.fraudScore >= 5) {
-            await prisma.user.update({
-                where: { id: userId },
-                data: { isBanned: true }
-            });
-            console.warn(`[ANTI-CHEAT] User ${userId} auto-banned. Fraud Score: ${user.fraudScore}`);
-            return res.status(403).json({ error: 'Account suspended due to suspicious activity.' });
+            console.warn(`[ANTI-CHEAT RELAXED] User ${userId} flagged with high fraud score (${user.fraudScore}). Sybil allowed for now.`);
+            // Removed: prisma.user.update isBanned: true
+            // Removed: res.status(403)
         }
 
         if (user.isBanned) {
