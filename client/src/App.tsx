@@ -19,6 +19,9 @@ const App: React.FC = () => {
   const [referrals, setReferrals] = useState<any>(null);
   const [loadingReferrals, setLoadingReferrals] = useState(false);
   const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+
+  const showNotification = (type: 'success' | 'error' | 'info', message: string) => setNotification({ type, message });
 
   useEffect(() => {
     const timer = setTimeout(() => setShowWelcome(false), 2000);
@@ -54,7 +57,7 @@ const App: React.FC = () => {
     isClaiming,
     registrationBonus,
     setRegistrationBonus
-  } = useGameEngine();
+  } = useGameEngine(showNotification);
 
   const [conversionResult, setConversionResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -149,10 +152,10 @@ const App: React.FC = () => {
   const handleWithdrawal = async (amount: number, address: string) => {
     try {
       await api.requestWithdrawal(amount, address);
-      alert("Withdrawal submitted successfully! Pending review.");
+      setNotification({ type: 'success', message: "Withdrawal submitted successfully! Pending review." });
       await refreshProfile();
     } catch (e: any) {
-      alert(e.message || "Withdrawal failed");
+      setNotification({ type: 'error', message: e.message || "Withdrawal failed" });
     }
   };
 
@@ -711,6 +714,7 @@ const App: React.FC = () => {
           <AdminView
             onClose={() => setShowAdminView(false)}
             userRole={profile.role}
+            onNotify={(type, msg) => setNotification({ type, message: msg })}
           />
         )}
       </AnimatePresence>
@@ -761,6 +765,40 @@ const App: React.FC = () => {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {notification && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-xs bg-slate-900 border border-white/10 rounded-[32px] p-8 shadow-2xl text-center relative overflow-hidden"
+            >
+              <div className="absolute inset-0 z-0 opacity-10">
+                <img src="/mine_bg.png" alt="BG" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative z-10">
+                <div className={`w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center ${notification.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : notification.type === 'error' ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                  {notification.type === 'success' ? <Star size={32} /> : notification.type === 'error' ? <ShieldAlert size={32} /> : <Coins size={32} />}
+                </div>
+                <h3 className="text-xl font-black text-white mb-2 uppercase italic">
+                  {notification.type === 'success' ? 'SUCCESS!' : notification.type === 'error' ? 'ERROR!' : 'NOTICE'}
+                </h3>
+                <p className="text-slate-400 text-sm mb-8 leading-relaxed font-bold uppercase tracking-tight">
+                  {notification.message}
+                </p>
+                <button
+                  onClick={() => setNotification(null)}
+                  className="w-full py-4 bg-white text-slate-900 font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-slate-100 transition-all shadow-lg active:scale-95"
+                >
+                  Confirm
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

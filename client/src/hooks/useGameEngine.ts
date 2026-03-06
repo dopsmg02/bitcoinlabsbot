@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
 
-export function useGameEngine() {
+export function useGameEngine(onNotify?: (type: 'success' | 'error' | 'info', message: string) => void) {
     const [isInitializing, setIsInitializing] = useState(true);
     const [profile, setProfile] = useState<any>(null);
     const [visualGold, setVisualGold] = useState(0);
@@ -175,7 +175,8 @@ export function useGameEngine() {
             }
         } catch (e) {
             console.error("Claim Error:", e);
-            alert("Failed to claim gold. Please try again.");
+            if (onNotify) onNotify('error', "Failed to claim gold. Please try again.");
+            else alert("Failed to claim gold. Please try again.");
         } finally {
             setIsClaiming(false);
         }
@@ -264,7 +265,8 @@ export function useGameEngine() {
             }
         } catch (e: any) {
             console.error("Ad Request Failed:", e);
-            alert(e.message || "Failed to start Ad");
+            if (onNotify) onNotify('error', e.message || "Failed to start Ad");
+            else alert(e.message || "Failed to start Ad");
             setIsAdLoading(false);
             return false;
         }
@@ -290,7 +292,8 @@ export function useGameEngine() {
             await api.upgradeMiner();
             await refreshProfile();
         } catch (e: any) {
-            alert(e.message || "Upgrade failed");
+            if (onNotify) onNotify('error', e.message || "Upgrade failed");
+            else alert(e.message || "Upgrade failed");
         }
     };
 

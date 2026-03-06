@@ -137,13 +137,13 @@ export const requestWithdrawal = async (req: Request, res: Response): Promise<vo
         const result = await prisma.$transaction(async (tx: any) => {
             const user = await tx.user.findUnique({
                 where: { id: userId },
-                select: { maxBalance: true, lastWithdrawAt: true }
+                select: { maxBalance: true, lastWithdrawAt: true, role: true }
             });
 
             if (!user) throw new EconomyError('User not found', 404);
 
-            // 24-Hour Cooldown
-            if (user.lastWithdrawAt) {
+            // 24-Hour Cooldown (Bypassed by Admins)
+            if (user.lastWithdrawAt && user.role === 'PLAYER') {
                 const msSinceLast = Date.now() - user.lastWithdrawAt.getTime();
                 if (msSinceLast < 24 * 60 * 60 * 1000) {
                     const remainingHours = Math.ceil((24 * 60 * 60 * 1000 - msSinceLast) / 3600000);

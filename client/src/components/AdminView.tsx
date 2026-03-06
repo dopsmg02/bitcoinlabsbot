@@ -6,9 +6,10 @@ import { api } from '../api';
 interface AdminViewProps {
     onClose: () => void;
     userRole: string;
+    onNotify: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
-export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
+export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotify }) => {
     const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'PAYOUTS' | 'SETTINGS'>('DASHBOARD');
     const [stats, setStats] = useState<any>(null);
     const [config, setConfig] = useState<any>(null);
@@ -53,7 +54,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
             const res = await api.getAdminStats();
             if (res.success) setStats(res.data);
         } catch (e: any) {
-            alert("Failed to load stats: " + e.message);
+            onNotify('error', "Failed to load stats: " + e.message);
         }
     };
 
@@ -63,7 +64,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
             const res = await api.getAdminConfig();
             if (res.success) setConfig(res.data);
         } catch (e: any) {
-            alert("Failed to load config: " + e.message);
+            onNotify('error', "Failed to load config: " + e.message);
         } finally {
             setLoadingConfig(false);
         }
@@ -106,7 +107,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
             loadWithdrawals(page);
             loadStats();
         } catch (e) {
-            alert("Failed to update withdrawal status");
+            onNotify('error', "Failed to update withdrawal status");
         }
     };
 
@@ -122,19 +123,19 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
                 await api.adminToggleBan(user.id, !user.isBanned);
                 loadUsers(page, searchQuery);
             } catch (e) {
-                alert("Failed to toggle ban status");
+                onNotify('error', "Failed to toggle ban status");
             }
         }
     };
 
     const handleRoleChange = async (user: any, newRole: 'PLAYER' | 'ADMIN') => {
-        if (userRole !== 'SUPER_ADMIN') return alert("Requires Super Admin");
+        if (userRole !== 'SUPER_ADMIN') return onNotify('error', "Requires Super Admin");
         if (window.confirm(`Set role for ${user.id} to ${newRole}?`)) {
             try {
                 await api.adminSetRole(user.id, newRole);
                 loadUsers(page, searchQuery);
             } catch (e) {
-                alert("Failed to change role");
+                onNotify('error', "Failed to change role");
             }
         }
     };
@@ -147,7 +148,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
             setAdjustAmount('');
             loadUsers(page, searchQuery);
         } catch (e) {
-            alert("Failed to adjust balance");
+            onNotify('error', "Failed to adjust balance");
         }
     };
 
@@ -159,7 +160,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
             setNewLevel('');
             loadUsers(page, searchQuery);
         } catch (e) {
-            alert("Failed to set level");
+            onNotify('error', "Failed to set level");
         }
     };
 
@@ -172,9 +173,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole }) => {
                 await api.adminUpdateConfig({ goldToMaxRate: Number(value) });
             }
             loadConfig();
-            alert("Settings updated");
+            onNotify('success', "Settings updated");
         } catch (e) {
-            alert("Update failed");
+            onNotify('error', "Update failed");
         }
     };
 
