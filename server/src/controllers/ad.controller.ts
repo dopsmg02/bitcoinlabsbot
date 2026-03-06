@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import { redis } from '../config/redis';
 import { prisma } from '../prisma/client';
 
 // [MEDIUM FIX M2] Removed unused 'uuid' import — Prisma handles UUIDs
@@ -56,8 +55,7 @@ export const requestAd = async (req: Request, res: Response): Promise<void> => {
             }
         });
 
-        // Cache session token in Redis with 120s TTL (Gate #4)
-        await redis.set(`ad_session:${session.sessionId}`, userId, 'EX', 120);
+        // Session is stored in DB — no Redis needed
 
         res.status(200).json({
             success: true,
@@ -148,8 +146,7 @@ export const adNetworkCallback = async (req: Request, res: Response): Promise<vo
                 }
             });
 
-            // 6. Set Redis Cooldown (840s = 14 mins) enforcement lock
-            await redis.set(`ad_cooldown:${userId}`, Date.now().toString(), 'EX', 840);
+            // 6. Cooldown is enforced by `lastAdWatch` field (set above) — no Redis needed
 
             // 7. Only pay referrals on VALUED impressions
             //    NOT_VALUED = ad network paid $0, so we should NOT pay referrers
@@ -222,11 +219,10 @@ export const claimAdSDK = async (req: Request, res: Response): Promise<void> => 
             return;
         }
 
-        // Check Redis TTL — session must still be within the 120s window
-        const redisKey = `ad_session:${sessionId}`;
-        const cachedUserId = await redis.get(redisKey);
-        if (!cachedUserId || cachedUserId !== userId) {
-            res.status(400).json({ error: 'Session expired or invalid' });
+        // Check DB TTL — session must still be within the 120s window
+        const sessionAgeMs = Date.now() - session.createdAt.getTime();
+        if (sessionAgeMs > 120000) {
+            res.status(400).json({ error: 'Session expired' });
             return;
         }
 
@@ -285,8 +281,7 @@ export const claimAdSDK = async (req: Request, res: Response): Promise<void> => 
                 }
             });
 
-            // 6. Set Redis Cooldown (840s = 14 mins) enforcement lock
-            await redis.set(`ad_cooldown:${userId}`, Date.now().toString(), 'EX', 840);
+            // 6. Cooldown is enforced by `lastAdWatch` field (set above) — no Redis needed
 
             // 7. Pay referrals
             if (user.referrerId) {
@@ -319,9 +314,6 @@ export const claimAdSDK = async (req: Request, res: Response): Promise<void> => 
                 }
             }
         });
-
-        // Clean up Redis session key
-        await redis.del(redisKey);
 
         res.status(200).json({ success: true, message: 'Ad reward claimed successfully' });
 

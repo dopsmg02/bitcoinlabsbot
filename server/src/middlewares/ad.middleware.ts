@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { redis } from '../config/redis';
 
 /**
  * Gate #4: Enforcement of 14-min cooldown between ads.
  * Gate #2: Enforcement of 50 ads per day.
- * (Calculated via Redis or DB rollout depending on complexity)
+ * [PHASE 11 FIX] Removed Redis dependency — uses DB-only logic (lastAdWatch + AdSession count)
  */
 export const validateAdRequest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -14,11 +13,16 @@ export const validateAdRequest = async (req: Request, res: Response, next: NextF
             return;
         }
 
-        // 1. Check Redis Cooldown (Gate #4)
-        const lastWatch = await redis.get(`ad_cooldown:${userId}`);
-        if (lastWatch) {
-            const lastWatchTs = parseInt(lastWatch, 10);
-            const elapsedSeconds = Math.floor((Date.now() - lastWatchTs) / 1000);
+        const { prisma } = require('../prisma/client');
+
+        // 1. Check Cooldown via DB (Gate #4) — uses lastAdWatch field
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { lastAdWatch: true }
+        });
+
+        if (user?.lastAdWatch) {
+            const elapsedSeconds = Math.floor((Date.now() - user.lastAdWatch.getTime()) / 1000);
             const remainingCooldown = 840 - elapsedSeconds;
 
             if (remainingCooldown > 0) {
@@ -30,9 +34,7 @@ export const validateAdRequest = async (req: Request, res: Response, next: NextF
             }
         }
 
-        // 2. Check Daily Limit (Gate #2)
-        // Rolling 24h count from DB is most accurate for enforcement
-        const { prisma } = require('../prisma/client');
+        // 2. Check Daily Limit (Gate #2) — rolling 24h count from DB
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const adCount = await prisma.adSession.count({
             where: { userId, status: 'VALIDATED', createdAt: { gte: twentyFourHoursAgo } }
