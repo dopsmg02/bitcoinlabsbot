@@ -164,7 +164,7 @@ export const getReferrals = async (req: Request, res: Response): Promise<void> =
 
         // Formatter: Hide raw ID, prioritize Username
         const formatUser = (u: any) => ({
-            username: u.telegramUsername ? `@${u.telegramUsername}` : `Miner_${u.id.substring(0, 4)}`,
+            username: u.telegramUsername ? `@${u.telegramUsername.replace(/^@+/, '')}` : `Miner_${u.id.substring(0, 4)}`,
             minerLevel: u.minerLevel,
             joinedAt: u.createdAt
         });

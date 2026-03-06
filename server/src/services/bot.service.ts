@@ -48,7 +48,7 @@ export class BotService {
                     user = await prisma.user.create({
                         data: {
                             id: tgId,
-                            telegramUsername: ctx.from.username ? `@${ctx.from.username}` : null,
+                            telegramUsername: ctx.from.username || null,
                             isPremium: isPremium,
                             minerLevel: 1, // Lv 1 is default
                             referrerId: validReferrerId
