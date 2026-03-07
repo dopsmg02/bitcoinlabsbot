@@ -377,7 +377,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Bottom Controls - Flush with Nav */}
-            <div className="mt-auto mb-6 space-y-1 relative z-30">
+            <div className="mt-auto mb-2 space-y-1 relative z-30">
               <div className="bg-white p-2 rounded-xl shadow-lg border-2 border-indigo-100">
                 <div className="flex justify-between items-end mb-1">
                   <div>
