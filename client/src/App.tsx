@@ -22,12 +22,22 @@ const App: React.FC = () => {
   const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [showTicker, setShowTicker] = useState(true);
 
   const showNotification = (type: 'success' | 'error' | 'info', message: string) => setNotification({ type, message });
 
   useEffect(() => {
     api.getAnnouncements().then(res => {
-      if (res.success) setAnnouncements(res.data);
+      if (res.success) {
+        setAnnouncements(res.data);
+        const activeIds = res.data.filter((a: any) => a.active).map((a: any) => a.id).sort().join(',');
+        const dismissed = localStorage.getItem('dismissed_announcements');
+        if (dismissed === activeIds) {
+          setShowTicker(false);
+        } else {
+          setShowTicker(true);
+        }
+      }
     }).catch(console.error);
   }, []);
 
@@ -311,21 +321,42 @@ const App: React.FC = () => {
         {activeTab === 'MINE' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar pb-24">
 
-            {/* News Ticker - Prominent & Solid */}
-            {announcements.length > 0 && (
-              <div className="mb-2 bg-indigo-600 border-y border-white/10 py-2 overflow-hidden whitespace-nowrap relative shadow-lg">
+            {/* News Ticker - Floating & Dismissible */}
+            <AnimatePresence>
+              {showTicker && announcements.length > 0 && announcements.some(a => a.active) && (
                 <motion.div
-                  animate={{ x: ["100%", "-100%"] }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                  className="inline-block text-[11px] font-black uppercase tracking-[0.2em] text-white drop-shadow-sm"
+                  initial={{ y: -50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -50, opacity: 0 }}
+                  className="fixed top-4 left-4 right-4 z-[80] bg-indigo-600 border border-white/20 rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex items-center h-10"
                 >
-                  {announcements.filter(a => a.active).map(a => `[${a.type}] ${a.text}`).join('    •    ')}
+                  <div className="flex-1 overflow-hidden whitespace-nowrap relative h-full flex items-center">
+                    <motion.div
+                      animate={{ x: ["100%", "-100%"] }}
+                      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                      className="inline-block text-[10px] font-black uppercase tracking-[0.15em] text-white"
+                    >
+                      {announcements.filter(a => a.active).map(a => `[${a.type}] ${a.text}`).join('    •    ')}
+                    </motion.div>
+
+                    {/* Visual accents for ticker */}
+                    <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-indigo-600 to-transparent z-10" />
+                    <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-indigo-600 to-transparent z-10" />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setShowTicker(false);
+                      const activeIds = announcements.filter(a => a.active).map(a => a.id).sort().join(',');
+                      localStorage.setItem('dismissed_announcements', activeIds);
+                    }}
+                    className="h-full px-3 text-white border-l border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center"
+                  >
+                    <span className="text-xs font-black uppercase text-white/60 hover:text-white">Close</span>
+                  </button>
                 </motion.div>
-                {/* Visual accents for ticker */}
-                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-indigo-600 to-transparent z-10" />
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-indigo-600 to-transparent z-10" />
-              </div>
-            )}
+              )}
+            </AnimatePresence>
 
             {/* Top Info Cards - Compact */}
             <div className="grid grid-cols-2 gap-1 mb-1 text-center font-black italic uppercase tracking-tighter">
@@ -747,11 +778,20 @@ const App: React.FC = () => {
               </div>
               <div className="relative z-10 flex flex-col items-center">
                 <h2 className="text-2xl font-black mb-1 text-white uppercase italic text-center">{lootboxData.label}</h2>
-                <div className="my-10 drop-shadow-[0_0_35px_rgba(251,191,36,0.4)] bg-white/5 p-8 rounded-full border border-white/10">
+                <div className="my-8 drop-shadow-[0_0_40px_rgba(251,191,36,0.4)]">
                   {lootboxData.type === 'GOLD' ? (
-                    <Coins className="w-24 h-24 text-amber-500" />
+                    <motion.img
+                      initial={{ rotate: -10, scale: 0.8 }}
+                      animate={{ rotate: 0, scale: 1 }}
+                      transition={{ type: "spring", bounce: 0.5 }}
+                      src="/gold_reward.png"
+                      alt="Gold Reward"
+                      className="w-32 h-32 object-contain"
+                    />
                   ) : (
-                    <Star className="w-24 h-24 text-indigo-400" />
+                    <div className="bg-white/5 p-8 rounded-full border border-white/10">
+                      <Star className="w-24 h-24 text-indigo-400" />
+                    </div>
                   )}
                 </div>
                 <div className="text-4xl font-black text-white mb-8">+{lootboxData.amount.toLocaleString()}</div>

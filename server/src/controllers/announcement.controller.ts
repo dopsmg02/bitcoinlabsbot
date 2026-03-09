@@ -3,8 +3,16 @@ import { prisma } from '../prisma/client';
 
 export const getAnnouncements = async (req: Request, res: Response): Promise<void> => {
     try {
+        const { all } = req.query;
+        const where: any = {};
+
+        // If not 'all=true', only fetch active ones
+        if (all !== 'true') {
+            where.active = true;
+        }
+
         const announcements = await prisma.announcement.findMany({
-            where: { active: true },
+            where,
             orderBy: { createdAt: 'desc' }
         });
 

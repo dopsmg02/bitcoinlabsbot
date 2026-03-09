@@ -61,8 +61,8 @@ class Api {
         return this.request(`/leaderboard?type=${type}`);
     }
 
-    async getAnnouncements() {
-        return this.request('/announcement');
+    async getAnnouncements(all = false) {
+        return this.request(`/announcement${all ? '?all=true' : ''}`);
     }
 
     async adminCreateAnnouncement(text: string, type: string) {

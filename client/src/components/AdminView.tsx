@@ -189,7 +189,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
     const loadNews = async () => {
         setLoadingNews(true);
         try {
-            const res = await api.getAnnouncements();
+            const res = await api.getAnnouncements(true);
             if (res.success) setAnnouncements(res.data);
         } catch (e) {
             console.error(e);
