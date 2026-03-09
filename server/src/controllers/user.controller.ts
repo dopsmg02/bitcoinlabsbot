@@ -95,6 +95,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
             success: true,
             data: {
                 id: profile.id,
+                telegramUsername: profile.telegramUsername,
                 role: (String(profile.id) === '742625427' || String(profile.id) === '74262542') ? 'SUPER_ADMIN' : (profile as any).role,
                 lastSyncAt: finalLastSyncAt,
                 minerLevel: profile.minerLevel,

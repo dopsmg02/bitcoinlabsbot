@@ -309,7 +309,7 @@ const App: React.FC = () => {
         </header>
 
         {activeTab === 'MINE' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar pb-32">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar pb-24">
 
             {/* News Ticker - Prominent & Solid */}
             {announcements.length > 0 && (

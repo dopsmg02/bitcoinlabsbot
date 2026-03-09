@@ -154,7 +154,9 @@ export const LeaderboardView: React.FC<{ profile: any }> = ({ profile }) => {
                         <div>
                             <div className="text-[8px] font-black text-white/60 uppercase tracking-widest leading-none">Your Rank</div>
                             <div className="text-xs font-black text-white italic uppercase tracking-tighter">
-                                {profile?.telegramUsername || 'Anonymous Miner'}
+                                {profile?.telegramUsername
+                                    ? (profile.telegramUsername.startsWith('@') ? profile.telegramUsername : `@${profile.telegramUsername}`)
+                                    : (profile?.id ? `Miner_${String(profile.id).substring(0, 4)}` : 'Anonymous Miner')}
                             </div>
                         </div>
                     </div>
