@@ -57,7 +57,7 @@ class Api {
         return this.request('/user/referrals');
     }
 
-    async getLeaderboard(type: 'GOLD' | 'MAX' | 'REFERRAL') {
+    async getLeaderboard(type: 'GOLD' | 'MAX' | 'REFERRAL' | 'AD') {
         return this.request(`/leaderboard?type=${type}`);
     }
 

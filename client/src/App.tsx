@@ -52,7 +52,6 @@ const App: React.FC = () => {
     fuelSeconds,
     lootboxData,
     setLootboxData,
-    refreshProfile,
     requestAdAndRefuel,
     convertGold,
     upgradeLevel,
