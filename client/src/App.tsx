@@ -157,15 +157,6 @@ const App: React.FC = () => {
     setTimeout(() => setCopyFeedback(false), 2000);
   };
 
-  const handleWithdrawal = async (amount: number, address: string) => {
-    try {
-      await api.requestWithdrawal(amount, address);
-      setNotification({ type: 'success', message: "Withdrawal submitted successfully! Pending review." });
-      await refreshProfile();
-    } catch (e: any) {
-      setNotification({ type: 'error', message: e.message || "Withdrawal failed" });
-    }
-  };
 
   if (!isInitializing && !profile) {
     return (
