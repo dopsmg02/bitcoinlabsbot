@@ -311,16 +311,19 @@ const App: React.FC = () => {
         {activeTab === 'MINE' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar pb-32">
 
-            {/* News Ticker */}
+            {/* News Ticker - Prominent & Solid */}
             {announcements.length > 0 && (
-              <div className="mb-2 bg-indigo-500/10 border-y border-indigo-500/20 py-1 overflow-hidden whitespace-nowrap relative">
+              <div className="mb-2 bg-indigo-600 border-y border-white/10 py-2 overflow-hidden whitespace-nowrap relative shadow-lg">
                 <motion.div
                   animate={{ x: ["100%", "-100%"] }}
-                  transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                  className="inline-block text-[10px] font-black uppercase tracking-widest text-indigo-400"
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  className="inline-block text-[11px] font-black uppercase tracking-[0.2em] text-white drop-shadow-sm"
                 >
-                  {announcements.map(a => `[${a.type}] ${a.text}`).join(' • ')}
+                  {announcements.filter(a => a.active).map(a => `[${a.type}] ${a.text}`).join('    •    ')}
                 </motion.div>
+                {/* Visual accents for ticker */}
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-indigo-600 to-transparent z-10" />
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-indigo-600 to-transparent z-10" />
               </div>
             )}
 

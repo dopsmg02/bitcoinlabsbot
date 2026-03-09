@@ -16,6 +16,7 @@ export const LeaderboardView: React.FC<{ profile: any }> = ({ profile }) => {
     const [type, setType] = useState<'GOLD' | 'MAX' | 'REFERRAL' | 'AD'>('GOLD');
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<{ topUsers: LeaderboardUser[], userRank: number }>({ topUsers: [], userRank: 0 });
+    const [displayCount, setDisplayCount] = useState(5);
 
     useEffect(() => {
         setLoading(true);
@@ -45,7 +46,7 @@ export const LeaderboardView: React.FC<{ profile: any }> = ({ profile }) => {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex-1 flex flex-col h-full bg-slate-950/50 rounded-t-[32px] overflow-hidden border-t border-white/5 shadow-2xl"
+            className="flex-1 flex flex-col h-full bg-slate-950 rounded-t-[32px] overflow-hidden border-t border-white/5 shadow-2xl"
         >
             {/* Header / Tabs */}
             <div className="p-4 pt-6 bg-slate-900/80 backdrop-blur-md border-b border-white/5">
@@ -88,7 +89,7 @@ export const LeaderboardView: React.FC<{ profile: any }> = ({ profile }) => {
                 ) : (
                     <div className="space-y-2">
                         <AnimatePresence mode="popLayout">
-                            {data.topUsers.map((user, index) => (
+                            {data.topUsers.slice(0, displayCount).map((user, index) => (
                                 <motion.div
                                     key={user.id}
                                     initial={{ opacity: 0, x: -20 }}
@@ -119,6 +120,26 @@ export const LeaderboardView: React.FC<{ profile: any }> = ({ profile }) => {
                                 </motion.div>
                             ))}
                         </AnimatePresence>
+
+                        {data.topUsers.length > displayCount && (
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setDisplayCount(prev => prev + 10)}
+                                className="w-full py-4 mt-2 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 hover:bg-white/10 transition-colors"
+                            >
+                                Expand Ranking View
+                            </motion.button>
+                        )}
+
+                        {displayCount > 5 && (
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setDisplayCount(5)}
+                                className="w-full py-2 mt-1 text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-slate-400 transition-colors"
+                            >
+                                Show Less
+                            </motion.button>
+                        )}
                     </div>
                 )}
             </div>

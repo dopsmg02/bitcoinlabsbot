@@ -15,6 +15,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
             where: { id: userId },
             select: {
                 id: true,
+                telegramUsername: true,
                 role: true,
                 minerLevel: true,
                 goldBalance: true,
@@ -23,6 +24,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
                 lastSyncAt: true,
                 lastAdWatch: true,
                 lastWithdrawAt: true,
+                weeklyMiningCount: true,
                 createdAt: true
             }
         });
