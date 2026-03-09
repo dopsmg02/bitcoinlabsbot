@@ -112,7 +112,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-obsidian text-white font-sans selection:bg-mint/30 overflow-hidden flex flex-col relative select-none">
+    <div className="h-[100dvh] bg-obsidian text-white font-sans selection:bg-mint/30 overflow-hidden flex flex-col relative select-none">
 
       {/* Dynamic Background */}
       <div className="fixed inset-0 pointer-events-none z-0">

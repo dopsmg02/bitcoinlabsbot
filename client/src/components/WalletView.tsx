@@ -28,8 +28,8 @@ export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWit
     };
 
     const handleDeposit = async () => {
-        if (!depositAmount || Number(depositAmount) < 10) {
-            if (onNotify) onNotify('error', 'Minimum deposit is $10');
+        if (!depositAmount || Number(depositAmount) < 1) {
+            if (onNotify) onNotify('error', 'Minimum deposit is $1');
             return;
         }
         setIsLoading(true);
@@ -86,7 +86,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWit
                             </div>
                             <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase mb-2 leading-none">USDT BEP20</h3>
                             <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.3em] leading-relaxed px-4">
-                                Min deposit: $10.00 • Instant Sync
+                                Min deposit: $1.00 • Instant Sync
                             </p>
 
                             <div className="mt-12 bg-black/40 p-8 rounded-[32px] border border-white/5 shadow-inner">
@@ -99,7 +99,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWit
                                     </div>
                                     <input
                                         type="number"
-                                        placeholder="Amount (Min $10)"
+                                        placeholder="Amount (Min $1)"
                                         value={depositAmount}
                                         onChange={(e) => setDepositAmount(e.target.value)}
                                         className="w-full bg-zinc-950/80 border-2 border-white/5 rounded-2xl py-5 pl-12 pr-5 text-white placeholder:text-white/20 font-black tracking-widest text-sm focus:outline-none focus:border-mint/50 transition-colors"

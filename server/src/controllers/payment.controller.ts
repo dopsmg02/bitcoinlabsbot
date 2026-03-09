@@ -9,8 +9,8 @@ export const createDeposit = async (req: Request, res: Response) => {
     const { amount } = req.body;
     const userId = (req as any).user.id;
 
-    if (!amount || amount < 10) {
-        return res.status(400).json({ error: 'Minimum deposit is $10' });
+    if (!amount || amount < 1) {
+        return res.status(400).json({ error: 'Minimum deposit is $1' });
     }
 
     try {
