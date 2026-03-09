@@ -40,6 +40,7 @@ export default function App() {
     refreshAll,
     invest,
     spinWheel,
+    deposit,
     withdraw,
     simulateDevLogin
   } = useHyipEngine(notify);
@@ -104,7 +105,7 @@ export default function App() {
       case 'HOME': return <DashboardView profile={profile} myInvestments={myInvestments} onNavigate={setActiveTab} onSpinWheel={spinWheel} />;
       case 'INVEST': return <InvestmentView plans={plans} myInvestments={myInvestments} isActionLoading={isActionLoading} onInvest={invest} />;
       case 'FRIENDS': return <ReferralView profile={profile} onNotify={notify} />;
-      case 'WALLET': return <WalletView profile={profile} onNotify={notify} onWithdraw={withdraw} />;
+      case 'WALLET': return <WalletView profile={profile} onNotify={notify} onWithdraw={withdraw} onDeposit={deposit} />;
       case 'HISTORY': return <HistoryView history={history} refreshAll={refreshAll} />;
       default: return <DashboardView profile={profile} myInvestments={myInvestments} onNavigate={setActiveTab} onSpinWheel={spinWheel} />;
     }

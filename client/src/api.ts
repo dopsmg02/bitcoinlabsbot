@@ -88,6 +88,13 @@ class Api {
         return this.request<any>(`/user/leaderboard?type=${type}`);
     }
 
+    async createDeposit(amount: number) {
+        return this.request('/payment/create', {
+            method: 'POST',
+            body: JSON.stringify({ amount })
+        });
+    }
+
 
     async requestWithdrawal(amount: number, walletAddress: string) {
         return this.request('/investment/withdraw', {

@@ -6,12 +6,14 @@ interface WalletViewProps {
     profile: any;
     onNotify?: (type: 'success' | 'error' | 'info', msg: string) => void;
     onWithdraw: (amount: number, address: string) => Promise<boolean>;
+    onDeposit: (amount: number) => Promise<boolean>;
 }
 
-export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWithdraw }) => {
+export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWithdraw, onDeposit }) => {
     const [activeTab, setActiveTab] = useState<'DEPOSIT' | 'WITHDRAW'>('DEPOSIT');
     const [withdrawAddress, setWithdrawAddress] = useState('');
     const [withdrawAmount, setWithdrawAmount] = useState('');
+    const [depositAmount, setDepositAmount] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleWithdraw = async () => {
@@ -21,6 +23,19 @@ export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWit
         if (success) {
             setWithdrawAmount('');
             setWithdrawAddress('');
+        }
+        setIsLoading(false);
+    };
+
+    const handleDeposit = async () => {
+        if (!depositAmount || Number(depositAmount) < 10) {
+            if (onNotify) onNotify('error', 'Minimum deposit is $10');
+            return;
+        }
+        setIsLoading(true);
+        const success = await onDeposit(Number(depositAmount));
+        if (success) {
+            setDepositAmount('');
         }
         setIsLoading(false);
     };
@@ -76,11 +91,31 @@ export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWit
 
                             <div className="mt-12 bg-black/40 p-8 rounded-[32px] border border-white/5 shadow-inner">
                                 <p className="text-[10px] text-white/10 font-black uppercase tracking-[0.4em] mb-6">Initialize Gateway</p>
+
+                                {/* Deposit Amount Input */}
+                                <div className="relative mb-6">
+                                    <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
+                                        <span className="text-white/40 font-black italic">$</span>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        placeholder="Amount (Min $10)"
+                                        value={depositAmount}
+                                        onChange={(e) => setDepositAmount(e.target.value)}
+                                        className="w-full bg-zinc-950/80 border-2 border-white/5 rounded-2xl py-5 pl-12 pr-5 text-white placeholder:text-white/20 font-black tracking-widest text-sm focus:outline-none focus:border-mint/50 transition-colors"
+                                    />
+                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 flex gap-2">
+                                        <button onClick={() => setDepositAmount('50')} className="bg-white/5 hover:bg-white/10 text-white/40 text-[9px] font-black tracking-[0.2em] px-3 py-1.5 rounded-lg transition-colors">50</button>
+                                        <button onClick={() => setDepositAmount('100')} className="bg-white/5 hover:bg-white/10 text-white/40 text-[9px] font-black tracking-[0.2em] px-3 py-1.5 rounded-lg transition-colors">100</button>
+                                    </div>
+                                </div>
+
                                 <button
-                                    className="w-full bg-mint text-black py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] shadow-2xl active:scale-95 transition-all shadow-mint/10"
-                                    onClick={() => onNotify?.('info', 'Deposit gateway initializing...')}
+                                    className="w-full bg-mint text-black py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] shadow-2xl active:scale-95 transition-all shadow-mint/10 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+                                    onClick={handleDeposit}
+                                    disabled={isLoading}
                                 >
-                                    Generate Invoice
+                                    {isLoading ? <Loader2 size={18} className="animate-spin opacity-50" /> : 'Generate Invoice'}
                                 </button>
                             </div>
 

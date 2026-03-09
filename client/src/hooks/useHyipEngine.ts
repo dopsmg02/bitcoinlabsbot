@@ -95,6 +95,24 @@ export function useHyipEngine(onNotify?: (type: 'success' | 'error' | 'info', me
         return null;
     };
 
+    const deposit = async (amount: number) => {
+        setIsActionLoading(true);
+        try {
+            const res = await api.createDeposit(amount);
+            if (res.status === 'success' && res.invoice_url) {
+                if (onNotify) onNotify('success', 'Redirecting to payment gateway...');
+                window.location.href = res.invoice_url;
+                return true;
+            }
+            throw new Error('Failed to parse invoice response');
+        } catch (e: any) {
+            if (onNotify) onNotify('error', e.message || 'Deposit initialization failed');
+        } finally {
+            setIsActionLoading(false);
+        }
+        return false;
+    };
+
     const withdraw = async (amount: number, address: string) => {
         setIsActionLoading(true);
         try {
@@ -138,6 +156,7 @@ export function useHyipEngine(onNotify?: (type: 'success' | 'error' | 'info', me
         refreshAll,
         invest,
         spinWheel,
+        deposit,
         withdraw,
         simulateDevLogin
     };
