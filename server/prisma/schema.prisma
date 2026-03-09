@@ -27,6 +27,7 @@ model User {
   // TLT System & Progression
   minerLevel            Int           @default(1)
   weeklyMiningCount     Int           @default(0)
+  referralCount         Int           @default(0)
   
   // Balances (Server-Authoritative)
   goldBalance           BigInt        @default(0)
@@ -64,6 +65,10 @@ model User {
   withdrawals           Withdrawal[]
 
   @@index([referrerId]) // [MEDIUM FIX M1] For efficient referral chain walks
+  @@index([goldBalance(sort: Desc)])
+  @@index([maxBalance(sort: Desc)])
+  @@index([weeklyMiningCount(sort: Desc)])
+  @@index([referralCount(sort: Desc)])
 }
 
 model Transaction {

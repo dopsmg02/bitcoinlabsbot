@@ -56,6 +56,10 @@ export class BotService {
                     });
 
                     if (validReferrerId) {
+                        await prisma.user.update({
+                            where: { id: validReferrerId },
+                            data: { referralCount: { increment: 1 } }
+                        });
                         console.log(`[BOT] Referral Linked: User ${tgId} referred by ${validReferrerId}`);
                     }
                 } else {
