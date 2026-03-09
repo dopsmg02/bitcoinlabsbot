@@ -30,13 +30,21 @@
   z-index: 100;
 }
 
+html,
+body,
+#root {
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   background-color: var(--tg-theme-bg-color, var(--color-bg-dark));
   color: var(--tg-theme-text-color, white);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow: hidden;
-  height: 100vh;
   -webkit-overflow-scrolling: touch;
   /* Prevent blue highlight on tap in mobile */
   -webkit-tap-highlight-color: transparent;
