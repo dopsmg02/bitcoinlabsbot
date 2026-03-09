@@ -141,6 +141,7 @@ export const adNetworkCallback = async (req: Request, res: Response): Promise<vo
                 data: {
                     goldBalance: { increment: goldReward },
                     maxBalance: { increment: maxReward },
+                    weeklyMiningCount: { increment: 1 },
                     fuelUpdatedAt: new Date(),
                     lastAdWatch: new Date()
                 }
@@ -247,6 +248,7 @@ export const claimAdSDK = async (req: Request, res: Response): Promise<void> => 
                 data: {
                     goldBalance: { increment: goldReward },
                     maxBalance: { increment: maxReward },
+                    weeklyMiningCount: { increment: 1 },
                     fuelUpdatedAt: new Date(),
                     lastAdWatch: new Date()
                 }

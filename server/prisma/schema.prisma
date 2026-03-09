@@ -26,6 +26,7 @@ model User {
   
   // TLT System & Progression
   minerLevel            Int           @default(1)
+  weeklyMiningCount     Int           @default(0)
   
   // Balances (Server-Authoritative)
   goldBalance           BigInt        @default(0)
@@ -138,6 +139,20 @@ enum WithdrawStatus {
   APPROVED
   COMPLETED
   FAILED
+}
+
+enum NewsType {
+  INFO
+  WARNING
+  EVENT
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  text      String
+  type      NewsType @default(INFO)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
 }
 
 model SystemConfig {

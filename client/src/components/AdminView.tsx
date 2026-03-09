@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Users, Activity, Settings, Search, Edit3, UserX, UserCheck, ShieldPlus, ArrowLeft, Coins, Gem, ShieldAlert, Loader2 } from 'lucide-react';
+import { Shield, Users, Activity, Settings, Search, Edit3, UserX, UserCheck, ShieldPlus, ArrowLeft, Coins, Gem, ShieldAlert, Loader2, PlayCircle } from 'lucide-react';
 import { api } from '../api';
 
 interface AdminViewProps {
@@ -10,9 +10,10 @@ interface AdminViewProps {
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotify }) => {
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'PAYOUTS' | 'SETTINGS'>('DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'PAYOUTS' | 'SETTINGS' | 'NEWS'>('DASHBOARD');
     const [stats, setStats] = useState<any>(null);
     const [config, setConfig] = useState<any>(null);
+    const [announcements, setAnnouncements] = useState<any[]>([]);
 
     // User State
     const [users, setUsers] = useState<any[]>([]);
@@ -32,6 +33,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
     const [adjustAmount, setAdjustAmount] = useState('');
     const [newLevel, setNewLevel] = useState('');
 
+    // Announcement Management 
+    const [newNewsText, setNewNewsText] = useState('');
+    const [newNewsType, setNewNewsType] = useState('INFO');
+    const [loadingNews, setLoadingNews] = useState(false);
+
     useEffect(() => {
         loadStats();
         if (userRole === 'SUPER_ADMIN') {
@@ -46,6 +52,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
             loadWithdrawals(page);
         } else if (activeTab === 'SETTINGS') {
             loadConfig();
+        } else if (activeTab === 'NEWS') {
+            loadNews();
         }
     }, [activeTab, page]);
 
@@ -178,7 +186,42 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
             onNotify('error', "Update failed");
         }
     };
+    const loadNews = async () => {
+        setLoadingNews(true);
+        try {
+            const res = await api.getAnnouncements();
+            if (res.success) setAnnouncements(res.data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingNews(false);
+        }
+    };
 
+    const handleCreateNews = async () => {
+        if (!newNewsText) return;
+        try {
+            const res = await api.adminCreateAnnouncement(newNewsText, newNewsType);
+            if (res.success) {
+                onNotify('success', 'Announcement published!');
+                setNewNewsText('');
+                loadNews();
+            }
+        } catch (e) {
+            onNotify('error', 'Failed to publish');
+        }
+    };
+
+    const handleToggleNews = async (id: string, currentStatus: boolean) => {
+        try {
+            const res = await api.adminToggleAnnouncement(id, !currentStatus);
+            if (res.success) {
+                loadNews();
+            }
+        } catch (e) {
+            onNotify('error', 'Failed to toggle status');
+        }
+    };
 
     return (
         <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
@@ -206,6 +249,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                     { id: 'DASHBOARD', icon: Activity, label: 'Overview' },
                     { id: 'USERS', icon: Users, label: 'Mod Panel' },
                     { id: 'PAYOUTS', icon: Coins, label: 'Payouts' },
+                    { id: 'NEWS', icon: PlayCircle, label: 'News' },
                     { id: 'SETTINGS', icon: Settings, label: 'God Mode', super: true }
                 ].map((tab) => {
                     if (tab.super && userRole !== 'SUPER_ADMIN') return null;
@@ -429,6 +473,56 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                                 </div>
                             </div>
                         )}
+                    </div>
+                )}
+                {/* NEWS TAB */}
+                {activeTab === 'NEWS' && (
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        <div className="bg-slate-900 border border-white/10 p-6 rounded-3xl shadow-xl">
+                            <h3 className="text-white font-black uppercase mb-4 flex items-center gap-2">Broadcast New Message</h3>
+                            <div className="space-y-4">
+                                <textarea
+                                    value={newNewsText} onChange={e => setNewNewsText(e.target.value)}
+                                    placeholder="Enter announcement text for the scrolling ticker..."
+                                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm focus:outline-none focus:border-indigo-500 min-h-[100px]"
+                                />
+                                <div className="flex gap-4">
+                                    <select value={newNewsType} onChange={e => setNewNewsType(e.target.value)}
+                                        className="bg-slate-800 border-none rounded-xl text-xs px-4 font-bold outline-none">
+                                        <option value="INFO">INFO (Blue)</option>
+                                        <option value="EVENT">EVENT (Rose)</option>
+                                        <option value="WARNING">WARNING (Amber)</option>
+                                    </select>
+                                    <button onClick={handleCreateNews} className="flex-1 bg-indigo-600 py-3 rounded-xl font-black uppercase text-xs hover:bg-indigo-500">Publish to Ticker</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+                            <div className="p-4 bg-slate-950/50 border-b border-white/5 font-black uppercase text-[10px] tracking-widest text-slate-400">Manage Active Feed</div>
+                            <div className="divide-y divide-white/5">
+                                {loadingNews ? <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div> :
+                                    announcements.length === 0 ? <div className="p-8 text-center text-slate-500 text-xs italic">No messages found.</div> :
+                                        announcements.map(news => (
+                                            <div key={news.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                                                <div className="flex-1 pr-4">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${news.type === 'WARNING' ? 'bg-amber-500/20 text-amber-400' : news.type === 'EVENT' ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                                                            {news.type}
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-500 font-mono">{new Date(news.createdAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="text-xs text-white opacity-90">{news.text}</div>
+                                                </div>
+                                                <button onClick={() => handleToggleNews(news.id, news.active)}
+                                                    className={`px-4 py-2 rounded-xl font-black uppercase text-[9px] border ${news.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                                                    {news.active ? 'Active' : 'Archived'}
+                                                </button>
+                                            </div>
+                                        ))
+                                }
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

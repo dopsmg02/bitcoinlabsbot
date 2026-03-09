@@ -6,10 +6,11 @@ import { Coins, Users, Rocket, PlayCircle, Star, ArrowRight, ShieldAlert, Loader
 import { useGameEngine } from './hooks/useGameEngine';
 import { api } from './api';
 import { AdminView } from './components/AdminView';
+import { LeaderboardView } from './components/LeaderboardView';
 
 const App: React.FC = () => {
   const { isConnected } = useAccount();
-  const [activeTab, setActiveTab] = useState<'MINE' | 'UPGRADE' | 'FRIENDS' | 'WALLET'>('MINE');
+  const [activeTab, setActiveTab] = useState<'MINE' | 'UPGRADE' | 'FRIENDS' | 'WALLET' | 'LEADERBOARD'>('MINE');
 
   // Admin View State
   const [showAdminView, setShowAdminView] = useState(false);
@@ -20,8 +21,15 @@ const App: React.FC = () => {
   const [loadingReferrals, setLoadingReferrals] = useState(false);
   const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
 
   const showNotification = (type: 'success' | 'error' | 'info', message: string) => setNotification({ type, message });
+
+  useEffect(() => {
+    api.getAnnouncements().then(res => {
+      if (res.success) setAnnouncements(res.data);
+    }).catch(console.error);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowWelcome(false), 2000);
@@ -288,7 +296,7 @@ const App: React.FC = () => {
       <div className="relative z-10 max-w-md mx-auto h-screen flex flex-col pt-0 px-3 overflow-hidden">
         <header className="flex justify-between items-center mb-0">
           <div className="flex items-center ml-2">
-            <img src="/logo.png" alt="Max Miner Logo" className="h-[68px] object-contain drop-shadow-xl" />
+            <img src="/logo.png" alt="Max Miner Logo" className="h-[58px] object-contain drop-shadow-xl" />
           </div>
           <div className="flex items-center gap-2">
             {profile?.role && (profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN') && (
@@ -313,14 +321,27 @@ const App: React.FC = () => {
         {activeTab === 'MINE' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar pb-32">
 
+            {/* News Ticker */}
+            {announcements.length > 0 && (
+              <div className="mb-2 bg-indigo-500/10 border-y border-indigo-500/20 py-1 overflow-hidden whitespace-nowrap relative">
+                <motion.div
+                  animate={{ x: ["100%", "-100%"] }}
+                  transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                  className="inline-block text-[10px] font-black uppercase tracking-widest text-indigo-400"
+                >
+                  {announcements.map(a => `[${a.type}] ${a.text}`).join(' • ')}
+                </motion.div>
+              </div>
+            )}
+
             {/* Top Info Cards - Compact */}
-            <div className="grid grid-cols-2 gap-1.5 mb-1 text-center font-black italic uppercase tracking-tighter">
-              <div className="bg-white p-1.5 rounded-xl flex flex-col items-center shadow-md relative overflow-hidden group">
+            <div className="grid grid-cols-2 gap-1 mb-1 text-center font-black italic uppercase tracking-tighter">
+              <div className="bg-white p-1 rounded-xl flex flex-col items-center shadow-md relative overflow-hidden group">
                 <div className="absolute inset-0 bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <span className="text-[7px] text-amber-600 font-black uppercase tracking-widest mb-0 z-10">Gold Vault</span>
                 <span className="text-base font-black text-slate-900 leading-none z-10">{Math.floor(goldBalance).toLocaleString()}</span>
               </div>
-              <div className="bg-white p-1.5 rounded-xl flex flex-col items-center shadow-md relative overflow-hidden group">
+              <div className="bg-white p-1 rounded-xl flex flex-col items-center shadow-md relative overflow-hidden group">
                 <div className="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <span className="text-[7px] text-indigo-600 font-black uppercase tracking-widest mb-0 z-10">Max Tokens</span>
                 <span className="text-base font-black text-slate-900 leading-none z-10">{maxBalance.toFixed(1)}</span>
@@ -369,10 +390,10 @@ const App: React.FC = () => {
                   alt="Axe"
                   animate={{ rotate: [0, -10, 6, -3, 0], scale: [1, 1.03, 1] }}
                   transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
-                  className="w-48 h-48 object-contain"
+                  className="w-40 h-40 object-contain"
                 />
               ) : (
-                <img src="/pickaxe.png" alt="Axe" className="w-48 h-48 object-contain" />
+                <img src="/pickaxe.png" alt="Axe" className="w-40 h-40 object-contain" />
               )}
             </div>
 
@@ -608,7 +629,7 @@ const App: React.FC = () => {
                 onClick={convertGoldToMax}
                 disabled={goldBalance < selectedExchangeAmount || isConverting}
                 className={`w-full py-5 rounded-2xl font-black transition-all shadow-2xl uppercase tracking-widest text-xs flex items-center justify-center gap-2 relative z-50
-                  ${goldBalance >= selectedExchangeAmount && !isConverting ? 'bg-indigo-500 text-white hover:bg-indigo-400' : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border border-white/5'}`}
+                        ${goldBalance >= selectedExchangeAmount && !isConverting ? 'bg-indigo-500 text-white hover:bg-indigo-400' : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border border-white/5'}`}
               >
                 {isConverting ? (
                   <>
@@ -627,7 +648,7 @@ const App: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     className={`mt-4 p-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest border
-                      ${conversionResult.success ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}
+                            ${conversionResult.success ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}
                   >
                     {conversionResult.message}
                   </motion.div>
@@ -654,9 +675,9 @@ const App: React.FC = () => {
 
                 <button
                   disabled={maxBalance < 1000 || !manualWithdrawAddress.startsWith('0x') || manualWithdrawAddress.length < 40}
-                  onClick={() => handleWithdrawal(1000, manualWithdrawAddress)}
+                  onClick={() => api.requestWithdrawal(1000, manualWithdrawAddress).then(res => { if (res.success) showNotification('success', 'Withdrawal Requested!'); else showNotification('error', res.error); })}
                   className={`w-full py-5 rounded-2xl font-black transition-all shadow-xl uppercase tracking-widest text-xs flex items-center justify-center gap-2
-                    ${maxBalance >= 1000 && manualWithdrawAddress.startsWith('0x') ? 'bg-white text-indigo-950 hover:bg-blue-50' : 'bg-slate-900/50 text-slate-500 border border-white/5 cursor-not-allowed'}`}
+                          ${maxBalance >= 1000 && manualWithdrawAddress.startsWith('0x') ? 'bg-white text-indigo-950 hover:bg-blue-50' : 'bg-slate-900/50 text-slate-500 border border-white/5 cursor-not-allowed'}`}
                 >
                   <Wallet size={16} />
                   {maxBalance < 1000 ? 'MIN. 1000 $MAX REQUIRED' : 'INITIATE WITHDRAWAL'}
@@ -676,9 +697,14 @@ const App: React.FC = () => {
           </motion.div>
         )}
 
+        {activeTab === 'LEADERBOARD' && (
+          <LeaderboardView profile={profile} />
+        )}
+
         <nav className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-indigo-500/20 h-20 px-6 flex justify-between items-center z-50 max-w-md mx-auto rounded-t-[32px] shadow-[0_-15px_50px_rgba(0,0,0,0.6)] border-x border-indigo-500/10">
           {[
             { id: 'MINE', icon: Star, label: 'Mine', color: 'text-amber-400', bg: 'bg-amber-400/10' },
+            { id: 'LEADERBOARD', icon: Star, label: 'Top', color: 'text-rose-400', bg: 'bg-rose-400/10' },
             { id: 'UPGRADE', icon: Rocket, label: 'Boost', color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
             { id: 'FRIENDS', icon: Users, label: 'Ref', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
             { id: 'WALLET', icon: Coins, label: 'Vault', color: 'text-sky-400', bg: 'bg-sky-400/10' }
@@ -723,11 +749,9 @@ const App: React.FC = () => {
         {!!lootboxData && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md">
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="bg-slate-900 border border-slate-800 p-8 rounded-[40px] w-full max-w-sm flex flex-col items-center relative overflow-hidden shadow-2xl">
-              {/* Modal Background */}
               <div className="absolute inset-0 z-0 opacity-20">
                 <img src="/mine_bg.png" alt="BG" className="w-full h-full object-cover" />
               </div>
-
               <div className="relative z-10 flex flex-col items-center">
                 <h2 className="text-2xl font-black mb-1 text-white uppercase italic text-center">{lootboxData.label}</h2>
                 <div className="my-10 drop-shadow-[0_0_35px_rgba(251,191,36,0.4)] bg-white/5 p-8 rounded-full border border-white/10">
@@ -749,11 +773,9 @@ const App: React.FC = () => {
         {showTltModal && tltInfo && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-sm flex flex-col items-center relative overflow-hidden shadow-2xl">
-              {/* Modal Background */}
               <div className="absolute inset-0 z-0 opacity-30">
                 <img src="/mine_bg.png" alt="BG" className="w-full h-full object-cover" />
               </div>
-
               <div className="relative z-10 w-full flex flex-col items-center">
                 <h1 className="text-xl font-black text-amber-500 uppercase mb-6 italic">Loyalty Bonus</h1>
                 <div className="w-full bg-slate-800/90 backdrop-blur-sm p-4 rounded-xl mb-6 flex flex-col gap-2 border border-slate-700/50">

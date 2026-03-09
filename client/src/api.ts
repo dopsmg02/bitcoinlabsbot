@@ -57,6 +57,28 @@ class Api {
         return this.request('/user/referrals');
     }
 
+    async getLeaderboard(type: 'GOLD' | 'MAX' | 'REFERRAL') {
+        return this.request(`/leaderboard?type=${type}`);
+    }
+
+    async getAnnouncements() {
+        return this.request('/announcement');
+    }
+
+    async adminCreateAnnouncement(text: string, type: string) {
+        return this.request('/announcement', {
+            method: 'POST',
+            body: JSON.stringify({ text, type })
+        });
+    }
+
+    async adminToggleAnnouncement(id: string, active: boolean) {
+        return this.request(`/announcement/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ active })
+        });
+    }
+
     async requestAd() {
         return this.request('/ad/request', { method: 'POST' });
     }
