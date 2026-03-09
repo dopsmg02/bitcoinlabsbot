@@ -1,7 +1,7 @@
 {
-    "name": "w2e_max_miner_backend",
+    "name": "bitcoin-labs-api",
     "version": "1.0.0",
-    "description": "Backend for $MAX Miner",
+    "description": "Backend for Bitcoin Labs",
     "main": "dist/index.js",
     "scripts": {
         "start": "node dist/index.js",
@@ -10,6 +10,8 @@
     },
     "dependencies": {
         "@prisma/client": "^5.22.0",
+        "@types/axios": "^0.9.36",
+        "axios": "^1.13.6",
         "cors": "^2.8.5",
         "dotenv": "^16.3.1",
         "ethers": "^6.13.2",

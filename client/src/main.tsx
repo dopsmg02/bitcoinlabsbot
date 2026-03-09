@@ -19,12 +19,12 @@ import {
 } from "@tanstack/react-query";
 
 const config = getDefaultConfig({
-  appName: 'Watch to Earn MAX Miner',
+  appName: 'Bitcoin Labs',
   projectId: import.meta.env.VITE_PROJECT_ID || 'e9489c77e12cf9091d7f3d7dd2f3e4d1',
   chains: [bsc, bscTestnet],
   ssr: false,
   // Metadata for better Telegram/Mobile deep-linking
-  appDescription: 'Mine $MAX by watching ads in Telegram',
+  appDescription: 'Institutional-grade crypto investments in Telegram',
   appIcon: 'https://bitcoinlabsbot.vercel.app/logo.png',
   appUrl: 'https://bitcoinlabsbot.vercel.app',
 });

@@ -1,5 +1,4 @@
-const isProd = import.meta.env.PROD;
-const API_URL = isProd ? '/api' : (import.meta.env.VITE_API_URL || 'http://3.236.147.88:3000/api');
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 class Api {
     private token: string | null = localStorage.getItem('jwt');
@@ -9,17 +8,17 @@ class Api {
         localStorage.setItem('jwt', token);
     }
 
-    getToken() {
+    getToken(): string | null {
         return this.token;
     }
 
-    private async request(endpoint: string, options: RequestInit = {}) {
-        const headers: any = {
+    private async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+        const headers: HeadersInit = {
             'Content-Type': 'application/json',
             ...options.headers,
         };
         if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
+            (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`;
         }
 
         try {
@@ -85,6 +84,11 @@ class Api {
         });
     }
 
+    async getLeaderboard(type: string = 'GOLD') {
+        return this.request<any>(`/user/leaderboard?type=${type}`);
+    }
+
+
     async requestWithdrawal(amount: number, walletAddress: string) {
         return this.request('/investment/withdraw', {
             method: 'POST',
@@ -101,13 +105,13 @@ class Api {
     async getAdminUsers(page = 1, limit = 50, search = '') {
         const query = new URLSearchParams({ page: String(page), limit: String(limit) });
         if (search) query.append('search', search);
-        return this.request(`/admin/users?${query.toString()}`);
+        return this.request<any>(`/admin/users?${query.toString()}`);
     }
 
-    async adminAdjustBalance(userId: string, amount: number, reason?: string) {
-        return this.request(`/admin/users/${userId}/adjust`, {
+    async adminAdjustBalance(userId: string, type: 'GOLD' | 'BTCL', amount: number) {
+        return this.request<any>(`/admin/users/${userId}/adjust`, {
             method: 'POST',
-            body: JSON.stringify({ amount, reason })
+            body: JSON.stringify({ type, amount })
         });
     }
 
@@ -127,16 +131,62 @@ class Api {
 
     // --- WITHDRAWAL MANAGEMENT ---
 
-    async getAdminWithdrawals(status?: string) {
-        const query = new URLSearchParams();
-        if (status) query.append('status', status);
-        return this.request(`/admin/withdrawals?${query.toString()}`);
+    async getAdminWithdrawals(page = 1, limit = 50, status?: string) {
+        const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+        if (status) query.append('search', status); // Wait, this was search in previous code?
+        return this.request<any>(`/admin/withdrawals?${query.toString()}`);
     }
 
     async adminUpdateWithdrawalStatus(withdrawalId: string, status: 'COMPLETED' | 'REJECTED') {
         return this.request(`/admin/withdrawals/${withdrawalId}/status`, {
             method: 'POST',
             body: JSON.stringify({ status })
+        });
+    }
+
+    async getAdminConfig() {
+        return this.request('/admin/config');
+    }
+
+    async adminUpdateConfig(config: any) {
+        return this.request('/admin/config', {
+            method: 'POST',
+            body: JSON.stringify(config)
+        });
+    }
+
+    async adminSetRole(userId: string, role: string) {
+        return this.request(`/admin/users/${userId}/role`, {
+            method: 'POST',
+            body: JSON.stringify({ role })
+        });
+    }
+
+    async adminSetLevel(userId: string, tierLevel: number) {
+        return this.request(`/admin/users/${userId}/adjust`, {
+            method: 'POST',
+            body: JSON.stringify({ tierLevel })
+        });
+    }
+
+    async adminCreateAnnouncement(text: string, type: string) {
+        return this.request('/announcement', {
+            method: 'POST',
+            body: JSON.stringify({ text, type })
+        });
+    }
+
+    async adminUpdateAnnouncement(id: string, data: any) {
+        return this.request(`/announcement/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async adminToggleAnnouncement(id: string, active: boolean) {
+        return this.request(`/announcement/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ active })
         });
     }
 }

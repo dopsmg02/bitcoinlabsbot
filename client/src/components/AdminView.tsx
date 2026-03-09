@@ -29,9 +29,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
 
     // Modal State
     const [editingUser, setEditingUser] = useState<any>(null);
-    const [adjustType, setAdjustType] = useState<'GOLD' | 'MAX'>('GOLD');
+    const [adjustType, setAdjustType] = useState<'GOLD' | 'BTCL'>('GOLD');
     const [adjustAmount, setAdjustAmount] = useState('');
-    const [newLevel, setNewLevel] = useState('');
+    const [newTier, setNewTier] = useState('');
 
     // Announcement Management 
     const [newNewsText, setNewNewsText] = useState('');
@@ -111,7 +111,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
         }
     };
 
-    const handleWithdrawalAction = async (id: string, status: 'COMPLETED' | 'FAILED') => {
+    const handleWithdrawalAction = async (id: string, status: 'COMPLETED' | 'REJECTED') => {
         if (!window.confirm(`Are you sure you want to ${status === 'COMPLETED' ? 'APPROVE' : 'REJECT'} this withdrawal?`)) return;
         try {
             await api.adminUpdateWithdrawalStatus(id, status);
@@ -163,15 +163,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
         }
     };
 
-    const handleSetLevel = async () => {
-        if (!editingUser || !newLevel) return;
+    const handleSetTier = async () => {
+        if (!editingUser || !newTier) return;
         try {
-            await api.adminSetLevel(editingUser.id, Number(newLevel));
+            await api.adminSetLevel(editingUser.id, Number(newTier));
             setEditingUser(null);
-            setNewLevel('');
+            setNewTier('');
             loadUsers(page, searchQuery);
         } catch (e) {
-            onNotify('error', "Failed to set level");
+            onNotify('error', "Failed to set tier");
         }
     };
 
@@ -181,7 +181,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                 await api.adminUpdateConfig({ maintenanceMode: value });
             } else if (type === 'RATE') {
                 if (!value || isNaN(value)) return;
-                await api.adminUpdateConfig({ goldToMaxRate: Number(value) });
+                await api.adminUpdateConfig({ goldToBtclRate: Number(value) });
             }
             loadConfig();
             onNotify('success', "Settings updated");
@@ -296,12 +296,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                             <Users className="absolute bottom-[-10px] right-[-10px] w-20 h-20 text-white/5 z-0" />
                         </div>
                         <div className="bg-slate-900 border border-emerald-500/20 p-5 rounded-3xl shadow-lg">
-                            <div className="text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-1">Active Miners (24h)</div>
-                            <div className="text-3xl font-black text-white">{stats.activeMiners.toLocaleString()}</div>
+                            <div className="text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-1">Active Investors (24h)</div>
+                            <div className="text-3xl font-black text-white">{stats.activeInvestors.toLocaleString()}</div>
                         </div>
                         <div className="bg-blue-900/40 border border-blue-500/30 p-5 rounded-3xl shadow-lg">
-                            <div className="text-blue-300 text-[10px] font-black uppercase tracking-widest mb-1">$MAX Circulating</div>
-                            <div className="text-3xl font-black text-white">{stats.totalMax.toLocaleString(undefined, { maximumFractionDigits: 1 })}</div>
+                            <div className="text-blue-300 text-[10px] font-black uppercase tracking-widest mb-1">$BTCL Circulating</div>
+                            <div className="text-3xl font-black text-white">{stats.totalBtcl.toLocaleString(undefined, { maximumFractionDigits: 1 })}</div>
                         </div>
                         <div className="bg-amber-900/40 border border-amber-500/30 p-5 rounded-3xl shadow-lg">
                             <div className="text-amber-300 text-[10px] font-black uppercase tracking-widest mb-1">Pending Payouts</div>
@@ -327,8 +327,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                                     <thead className="bg-slate-950/50 text-slate-400 text-xs uppercase tracking-wider font-black">
                                         <tr>
                                             <th className="p-4">User</th>
-                                            <th className="p-4">Level</th>
-                                            <th className="p-4">Gold & Max</th>
+                                            <th className="p-4">Tier</th>
+                                            <th className="p-4">Gold & BTCL</th>
                                             <th className="p-4">Role / Status</th>
                                             <th className="p-4 text-right">Actions</th>
                                         </tr>
@@ -343,11 +343,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                                                     <div className="text-[10px] text-slate-500 font-mono mt-0.5">{user.id}</div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <span className="bg-white/10 px-2 py-1 rounded font-black text-xs">Lv. {user.minerLevel}</span>
+                                                    <span className="bg-white/10 px-2 py-1 rounded font-black text-xs">Tier {user.tierLevel}</span>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="text-amber-400 font-bold text-xs flex items-center gap-1"><Coins size={12} /> {Number(user.goldBalance).toLocaleString()}</div>
-                                                    <div className="text-sky-400 font-bold text-xs flex items-center gap-1 mt-1"><Gem size={12} /> {user.maxBalance}</div>
+                                                    <div className="text-sky-400 font-bold text-xs flex items-center gap-1 mt-1"><Gem size={12} /> {user.btclBalance}</div>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex flex-col gap-1 items-start">
@@ -413,7 +413,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                                                     <div className="text-[10px] text-slate-500 font-mono mt-0.5">{new Date(w.createdAt).toLocaleString()}</div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-xl font-black text-white">{Number(w.amount).toLocaleString()} <span className="text-sky-400 text-[10px]">$MAX</span></div>
+                                                    <div className="text-xl font-black text-white">{Number(w.amount).toLocaleString()} <span className="text-sky-400 text-[10px]">$BTCL</span></div>
                                                     <div className="text-[10px] text-slate-500">Fee: {Number(w.fee)}</div>
                                                 </td>
                                                 <td className="p-4">
@@ -431,7 +431,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                                                     {w.status === 'PENDING' && (
                                                         <>
                                                             <button onClick={() => handleWithdrawalAction(w.id, 'COMPLETED')} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-black text-[10px] hover:bg-emerald-500 transition-colors uppercase">APPROVE</button>
-                                                            <button onClick={() => handleWithdrawalAction(w.id, 'FAILED')} className="px-3 py-1.5 bg-red-600 text-white rounded-lg font-black text-[10px] hover:bg-red-500 transition-colors uppercase">REJECT</button>
+                                                            <button onClick={() => handleWithdrawalAction(w.id, 'REJECTED')} className="px-3 py-1.5 bg-red-600 text-white rounded-lg font-black text-[10px] hover:bg-red-500 transition-colors uppercase">REJECT</button>
                                                         </>
                                                     )}
                                                 </td>
@@ -484,11 +484,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
 
                                     <div className="flex items-center justify-between p-4 bg-black/40 rounded-2xl border border-white/5">
                                         <div>
-                                            <div className="font-bold text-white mb-1">Exchange Rate (Gold to $MAX)</div>
-                                            <div className="text-xs text-slate-400 max-w-xs">Cost in Gold to acquire 1.0 MAX. Current: {config.goldToMaxRate} G.</div>
+                                            <div className="font-bold text-white mb-1">Exchange Rate (Gold to $BTCL)</div>
+                                            <div className="text-xs text-slate-400 max-w-xs">Cost in Gold to acquire 1.0 BTCL. Current: {config.goldToBtclRate} G.</div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <input type="number" id="rateInput" defaultValue={config.goldToMaxRate} className="w-24 bg-slate-950 border border-white/10 rounded-xl px-3 text-sm text-center" />
+                                            <input type="number" id="rateInput" defaultValue={config.goldToBtclRate} className="w-24 bg-slate-950 border border-white/10 rounded-xl px-3 text-sm text-center" />
                                             <button onClick={() => handleConfigUpdate('RATE', (document.getElementById('rateInput') as HTMLInputElement).value)} className="bg-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-500">SAVE</button>
                                         </div>
                                     </div>
@@ -603,7 +603,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                                     <div className="flex gap-2 mb-2">
                                         <select value={adjustType} onChange={e => setAdjustType(e.target.value as any)} className="bg-slate-800 border-none rounded-xl text-xs px-3 font-bold cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500">
                                             <option value="GOLD">Gold</option>
-                                            <option value="MAX">$MAX</option>
+                                            <option value="BTCL">$BTCL</option>
                                         </select>
                                         <input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} placeholder="e.g. 50000 or -100" className="flex-1 bg-slate-950 px-3 py-2 rounded-xl text-sm border border-white/10 focus:outline-none focus:border-indigo-500" />
                                     </div>
@@ -611,10 +611,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                                 </div>
 
                                 <div className="p-4 bg-black/40 rounded-2xl border border-white/5">
-                                    <label className="text-[10px] font-black uppercase text-slate-500 block mb-2">Set Miner Level</label>
+                                    <label className="text-[10px] font-black uppercase text-slate-500 block mb-2">Set Tier Level</label>
                                     <div className="flex gap-2">
-                                        <input type="number" min="1" max="10" value={newLevel} onChange={e => setNewLevel(e.target.value)} placeholder="1-10" className="w-20 bg-slate-950 px-3 py-2 rounded-xl text-sm border border-white/10 focus:outline-none text-center" />
-                                        <button onClick={handleSetLevel} className="flex-1 py-2 bg-amber-600 text-white rounded-xl text-xs font-black uppercase hover:bg-amber-500 transition-colors">Force Level</button>
+                                        <input type="number" min="1" max="10" value={newTier} onChange={e => setNewTier(e.target.value)} placeholder="1-10" className="w-20 bg-slate-950 px-3 py-2 rounded-xl text-sm border border-white/10 focus:outline-none text-center" />
+                                        <button onClick={handleSetTier} className="flex-1 py-2 bg-amber-600 text-white rounded-xl text-xs font-black uppercase hover:bg-amber-500 transition-colors">Force Tier</button>
                                     </div>
                                 </div>
                             </div>

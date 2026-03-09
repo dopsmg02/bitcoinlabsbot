@@ -48,14 +48,14 @@ export const investInPlan = async (req: Request, res: Response): Promise<void> =
         // Transactional Investment Logic
         const result = await prisma.$transaction(async (tx) => {
             const user = await tx.user.findUnique({ where: { id: userId } });
-            if (!user || Number(user.balance) < amt) {
+            if (!user || Number(user.btclBalance) < amt) {
                 throw new Error('Insufficient balance');
             }
 
             // Deduct balance
             await tx.user.update({
                 where: { id: userId },
-                data: { balance: { decrement: amt } }
+                data: { btclBalance: { decrement: amt } }
             });
 
             // Create Transaction Record
@@ -170,7 +170,7 @@ export const luckySpin = async (req: Request, res: Response): Promise<void> => {
             // Grant win
             await tx.user.update({
                 where: { id: userId },
-                data: { balance: { increment: winAmount } }
+                data: { btclBalance: { increment: winAmount } }
             });
 
             await tx.transaction.create({
@@ -212,14 +212,14 @@ export const requestWithdrawal = async (req: Request, res: Response): Promise<vo
 
         await prisma.$transaction(async (tx) => {
             const user = await tx.user.findUnique({ where: { id: userId } });
-            if (!user || Number(user.balance) < amt) {
+            if (!user || Number(user.btclBalance) < amt) {
                 throw new Error('Insufficient balance');
             }
 
             // Deduct immediately
             await tx.user.update({
                 where: { id: userId },
-                data: { balance: { decrement: amt } }
+                data: { btclBalance: { decrement: amt } }
             });
 
             // Create Pending Withdrawal

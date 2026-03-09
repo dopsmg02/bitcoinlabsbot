@@ -1,56 +1,54 @@
 /**
- * Telegram Loyalty Tier (TLT) Logic
- * Determis starting level and bonus gold based on Telegram ID age (length/prefix) and Premium status.
+ * Bitcoin Labs Loyalty Tier Logic
+ * Determines starting bonus based on Telegram ID age and Premium status.
+ * Values are in USDT ($).
  */
-export interface TLTResult {
+export interface LoyaltyTierResult {
     level: number;
-    bonusGold: number;
+    welcomeBonus: number;
     tierName: string;
 }
 
-export const calculateTLT = (tgId: string, isPremium: boolean): TLTResult => {
+export const calculateLoyaltyTier = (tgId: string, isPremium: boolean): LoyaltyTierResult => {
     let level = 1;
-    let bonusGold = 0;
-    let tierName = 'New Miner';
+    let welcomeBonus = 0.50; // Base bonus
+    let tierName = 'Standard';
 
     const idLength = tgId.length;
     const prefix = parseInt(tgId[0], 10) || 7;
 
     if (idLength <= 9) {
-        // ID 9 digit (akun sepuh)
+        // Old account
         level = 4;
-        bonusGold = 50000;
-        tierName = 'Ancient Miner';
+        welcomeBonus = 5.00;
+        tierName = 'Platinum';
     } else if (idLength === 10) {
         if (prefix >= 1 && prefix <= 3) {
-            // ID 10 digit kepala 1,2,3
             level = 3;
-            bonusGold = 25000;
-            tierName = 'Veteran Miner';
+            welcomeBonus = 2.50;
+            tierName = 'Gold';
         } else if (prefix >= 4 && prefix <= 6) {
-            // ID 10 digit kepala 4,5,6
             level = 2;
-            bonusGold = 10000;
-            tierName = 'Senior Miner';
+            welcomeBonus = 1.00;
+            tierName = 'Silver';
         } else {
-            // ID 10 digit kepala 7,8,9
             level = 1;
-            bonusGold = 5000;
-            tierName = 'Active Miner';
+            welcomeBonus = 0.50;
+            tierName = 'Bronze';
         }
     } else {
-        // ID 11 Digit
+        // New Account
         level = 1;
-        bonusGold = 2000;
-        tierName = 'Recruit Miner';
+        welcomeBonus = 0.25;
+        tierName = 'Starter';
     }
 
     // Premium Boost
     if (isPremium) {
         level = Math.min(level + 1, 4);
-        bonusGold += 10000;
+        welcomeBonus += 1.00;
         tierName += ' (VIP)';
     }
 
-    return { level, bonusGold, tierName };
+    return { level, welcomeBonus, tierName };
 };

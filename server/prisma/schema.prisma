@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
@@ -12,118 +9,90 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
-  SUPER_ADMIN
-}
-
 model User {
-  id                    String        @id // Telegram ID
-  telegramUsername      String?
-  isPremium             Boolean       @default(false)
-  role                  Role          @default(USER)
-  
-  // Balances
-  balance               Decimal       @default(0) @db.Decimal(18, 2)
-  totalDeposit          Decimal       @default(0) @db.Decimal(18, 2)
-  totalWithdraw         Decimal       @default(0) @db.Decimal(18, 2)
-  totalReferralBonus    Decimal       @default(0) @db.Decimal(18, 2)
-  
-  // Anti-Cheat & Security
-  isBanned              Boolean       @default(false)
-  lastLoginIp           String?       
-
-  // Referral System (Self-relation)
-  referrerId            String?       
-  referrer              User?         @relation("UserToReferrer", fields: [referrerId], references: [id])
-  downlines             User[]        @relation("UserToReferrer")
-
-  // Timestamps
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-
-  // Data Relations
-  investments           Investment[]
-  deposits              Deposit[]
-  withdrawals           Withdrawal[]
-  transactions          Transaction[]
-  luckySpinTickets      Int           @default(0)
+  id                 String        @id
+  telegramUsername   String?
+  isPremium          Boolean       @default(false)
+  role               Role          @default(USER)
+  btclBalance        Decimal       @default(0) @db.Decimal(18, 2)
+  tierLevel          Int           @default(1)
+  totalDeposit       Decimal       @default(0) @db.Decimal(18, 2)
+  totalWithdraw      Decimal       @default(0) @db.Decimal(18, 2)
+  totalReferralBonus Decimal       @default(0) @db.Decimal(18, 2)
+  isBanned           Boolean       @default(false)
+  lastLoginIp        String?
+  referrerId         String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  luckySpinTickets   Int           @default(0)
+  deposits           Deposit[]
+  investments        Investment[]
+  transactions       Transaction[]
+  referrer           User?         @relation("UserToReferrer", fields: [referrerId], references: [id])
+  downlines          User[]        @relation("UserToReferrer")
+  withdrawals        Withdrawal[]
 
   @@index([referrerId])
-  @@index([balance(sort: Desc)])
+  @@index([btclBalance(sort: Desc)])
 }
 
 model Plan {
-  id              String   @id @default(uuid())
-  name            String   // e.g., "Silver", "Gold", "VIP"
-  minAmount       Decimal  @db.Decimal(18, 2)
-  maxAmount       Decimal  @db.Decimal(18, 2)
-  dailyRoiPercent Decimal  @db.Decimal(5, 2) // e.g., 2.00%
-  durationDays    Int      // e.g., 30
-  active          Boolean  @default(true)
+  id              String       @id @default(uuid())
+  name            String
+  minAmount       Decimal      @db.Decimal(18, 2)
+  maxAmount       Decimal      @db.Decimal(18, 2)
+  dailyRoiPercent Decimal      @db.Decimal(5, 2)
+  durationDays    Int
+  active          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
   investments     Investment[]
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
 }
 
 model Investment {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  planId          String
-  plan            Plan     @relation(fields: [planId], references: [id])
-  
-  amount          Decimal  @db.Decimal(18, 2)
-  dailyRoi        Decimal  @db.Decimal(18, 2) // Cached daily profit amount
-  
-  totalEarned     Decimal  @default(0) @db.Decimal(18, 2)
-  lastRoiAt       DateTime @default(now()) // For daily profit distribution
-  
-  startDate       DateTime @default(now())
-  endDate         DateTime
-  
-  status          InvestmentStatus @default(ACTIVE)
-
-  createdAt       DateTime @default(now())
+  id          String           @id @default(uuid())
+  userId      String
+  planId      String
+  amount      Decimal          @db.Decimal(18, 2)
+  dailyRoi    Decimal          @db.Decimal(18, 2)
+  totalEarned Decimal          @default(0) @db.Decimal(18, 2)
+  lastRoiAt   DateTime         @default(now())
+  startDate   DateTime         @default(now())
+  endDate     DateTime
+  status      InvestmentStatus @default(ACTIVE)
+  createdAt   DateTime         @default(now())
+  plan        Plan             @relation(fields: [planId], references: [id])
+  user        User             @relation(fields: [userId], references: [id])
 
   @@index([userId, status])
 }
 
 model Deposit {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  
-  amount          Decimal  @db.Decimal(18, 2)
-  currency        String   @default("USDT_BEP20")
-  
-  // Plisio specific fields
-  txnId           String?  @unique // Plisio ID
-  address         String?  // Generated address
-  status          DepositStatus @default(PENDING)
-  
-  createdAt       DateTime @default(now())
-  completedAt     DateTime?
+  id          String        @id @default(uuid())
+  userId      String
+  amount      Decimal       @db.Decimal(18, 2)
+  currency    String        @default("USDT_BEP20")
+  txnId       String?       @unique
+  address     String?
+  status      DepositStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  completedAt DateTime?
+  user        User          @relation(fields: [userId], references: [id])
 
   @@index([userId, txnId])
 }
 
 model Withdrawal {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  
-  amount          Decimal  @db.Decimal(18, 2)
-  fee             Decimal  @db.Decimal(18, 2)
-  netAmount       Decimal  @db.Decimal(18, 2)
-  
-  walletAddress   String
-  status          WithdrawStatus @default(PENDING)
-  
-  createdAt       DateTime @default(now())
-  processedAt     DateTime?
+  id            String         @id @default(uuid())
+  userId        String
+  amount        Decimal        @db.Decimal(18, 2)
+  fee           Decimal        @db.Decimal(18, 2)
+  netAmount     Decimal        @db.Decimal(18, 2)
+  walletAddress String
+  status        WithdrawStatus @default(PENDING)
+  createdAt     DateTime       @default(now())
+  processedAt   DateTime?
+  user          User           @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
 }
@@ -131,15 +100,32 @@ model Withdrawal {
 model Transaction {
   id          String   @id @default(uuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  
   type        TxType
   amount      Decimal  @db.Decimal(18, 2)
   description String?
-  
   createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
 
   @@index([userId, type])
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  text      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model SystemConfig {
+  id              String   @id @default("GLOBAL")
+  maintenanceMode Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
 }
 
 enum InvestmentStatus {
@@ -177,17 +163,4 @@ enum TxType {
   REFERRAL_LEVEL_5
   BONUS_BOUNTY
   LUCKY_SPIN
-}
-
-model Announcement {
-  id        String   @id @default(uuid())
-  text      String
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-}
-
-model SystemConfig {
-  id              String   @id @default("GLOBAL")
-  maintenanceMode Boolean  @default(false)
-  updatedAt       DateTime @updatedAt
 }

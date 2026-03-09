@@ -12,7 +12,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
         const aggregated = await prisma.user.aggregate({
             _sum: {
-                balance: true,
+                btclBalance: true,
                 totalDeposit: true,
                 totalWithdraw: true
             }
@@ -33,8 +33,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             success: true,
             data: {
                 totalUsers,
-                activeUsers,
-                totalBalance: Number(aggregated._sum.balance || 0),
+                activeInvestors: activeUsers,
+                totalBtcl: Number(aggregated._sum.btclBalance || 0),
                 totalDeposits: Number(aggregated._sum.totalDeposit || 0),
                 totalWithdrawals: Number(aggregated._sum.totalWithdraw || 0),
                 activeInvestmentsTotal: Number(activeInvestments._sum.amount || 0),
@@ -75,11 +75,11 @@ export const getUsers = async (req: Request, res: Response) => {
                     id: true,
                     telegramUsername: true,
                     role: true,
-                    balance: true,
+                    btclBalance: true,
+                    tierLevel: true,
                     totalDeposit: true,
                     isBanned: true,
-                    createdAt: true,
-                    luckySpinTickets: true
+                    createdAt: true
                 }
             }),
             prisma.user.count({ where: whereClause })
@@ -89,7 +89,8 @@ export const getUsers = async (req: Request, res: Response) => {
             success: true,
             data: users.map(u => ({
                 ...u,
-                balance: u.balance.toString(),
+                btclBalance: u.btclBalance.toString(),
+                goldBalance: "0", // Default for now
                 totalDeposit: u.totalDeposit.toString()
             })),
             meta: {
@@ -108,10 +109,10 @@ export const getUsers = async (req: Request, res: Response) => {
 export const adjustUserBalance = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { amount, reason } = req.body;
+        const { amount, tierLevel, reason } = req.body;
 
-        if (!amount || isNaN(amount)) {
-            return res.status(400).json({ success: false, error: 'Invalid amount' });
+        if (!amount && !tierLevel) {
+            return res.status(400).json({ success: false, error: 'Missing adjustment data' });
         }
 
         const user = await prisma.user.findUnique({ where: { id } });
@@ -119,31 +120,38 @@ export const adjustUserBalance = async (req: Request, res: Response) => {
             return res.status(404).json({ success: false, error: 'User not found' });
         }
 
-        const amt = Number(amount);
-
         const updatedUser = await prisma.$transaction(async (tx) => {
-            const u = await tx.user.update({
+            const updateData: any = {};
+
+            if (amount && !isNaN(Number(amount))) {
+                const amt = Number(amount);
+                updateData.btclBalance = { increment: amt };
+
+                await tx.transaction.create({
+                    data: {
+                        userId: id,
+                        type: amt > 0 ? 'BONUS_BOUNTY' : 'WITHDRAW',
+                        amount: Math.abs(amt),
+                        description: `Admin Adjustment: ${reason || 'Manual fix'}`
+                    }
+                });
+            }
+
+            if (tierLevel !== undefined) {
+                updateData.tierLevel = Number(tierLevel);
+            }
+
+            return await tx.user.update({
                 where: { id },
-                data: { balance: { increment: amt } }
+                data: updateData
             });
-
-            await tx.transaction.create({
-                data: {
-                    userId: id,
-                    type: amt > 0 ? 'BONUS_BOUNTY' : 'WITHDRAW',
-                    amount: Math.abs(amt),
-                    description: `Admin Adjustment: ${reason || 'Manual fix'}`
-                }
-            });
-
-            return u;
         });
 
         res.json({
             success: true,
             data: {
                 id: updatedUser.id,
-                balance: updatedUser.balance.toString()
+                btclBalance: updatedUser.btclBalance.toString()
             }
         });
     } catch (error) {
@@ -156,10 +164,6 @@ export const giveLuckyTickets = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { amount } = req.body;
-
-        if (typeof amount !== 'number' || amount < 1) {
-            return res.status(400).json({ success: false, error: 'Invalid amount' });
-        }
 
         const updatedUser = await prisma.user.update({
             where: { id },
@@ -321,7 +325,7 @@ export const updateWithdrawalStatus = async (req: Request, res: Response) => {
                 prisma.user.update({
                     where: { id: withdrawal.userId },
                     data: {
-                        balance: { increment: refundAmount }
+                        btclBalance: { increment: refundAmount }
                     }
                 }),
                 prisma.transaction.create({

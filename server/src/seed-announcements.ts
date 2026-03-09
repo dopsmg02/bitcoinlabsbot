@@ -6,9 +6,9 @@ async function main() {
 
     await prisma.announcement.createMany({
         data: [
-            { text: 'Welcome to Max Miner! Start mining now to earn $MAX tokens.', type: 'INFO' },
-            { text: 'Global Leaderboard is LIVE! Check your rank in the new TOP tab.', type: 'EVENT' },
-            { text: 'Withdrawals are processed within 24-48 hours. Ensure your BSC address is correct.', type: 'WARNING' }
+            { text: 'Welcome to Bitcoin Labs! Start your investment journey now.' },
+            { text: 'Global Leaderboard is LIVE! Check your rank in the new TOP tab.' },
+            { text: 'Withdrawals are processed within 24-48 hours. Ensure your wallet address is correct.' }
         ]
     });
 

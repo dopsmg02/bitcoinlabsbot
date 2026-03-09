@@ -62,7 +62,7 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
                 lastLoginIp: clientIp,
                 isPremium: isPremium
             };
-            
+
             // Referral linking for existing users who didn't have a referrer before
             if (!user.referrerId && referrerId && typeof referrerId === 'string' && referrerId !== userIdStr) {
                 const referrerExists = await prisma.user.findUnique({ where: { id: referrerId } });
@@ -70,7 +70,7 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
                     updateData.referrerId = referrerId;
                 }
             }
-            
+
             user = await prisma.user.update({
                 where: { id: userIdStr },
                 data: updateData
@@ -90,7 +90,8 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
                     id: userIdStr,
                     telegramUsername: tgUser.username ? `@${tgUser.username}` : null,
                     isPremium: isPremium,
-                    balance: WELCOME_BONUS,
+                    btclBalance: WELCOME_BONUS,
+                    tierLevel: 1,
                     referrerId: validReferrerId,
                     lastLoginIp: clientIp,
                     transactions: {
@@ -118,7 +119,9 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
                 role: user.role,
                 telegramUsername: user.telegramUsername,
                 isPremium: user.isPremium,
-                balance: user.balance.toString(),
+                btclBalance: user.btclBalance.toString(),
+                goldBalance: "0",
+                tierLevel: user.tierLevel,
                 totalDeposit: user.totalDeposit.toString(),
                 isNew: isNewUser
             },

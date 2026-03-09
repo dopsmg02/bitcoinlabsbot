@@ -1,6 +1,6 @@
 import { Telegraf, Markup } from 'telegraf';
 import { prisma } from '../prisma/client';
-import { calculateTLT } from '../utils/tlt';
+import { calculateLoyaltyTier } from '../utils/tlt';
 
 export class BotService {
     private bot: Telegraf;
@@ -20,7 +20,7 @@ export class BotService {
             try {
                 const tgId = ctx.from.id.toString();
                 const startParam = ctx.payload; // This is the 'start' parameter (e.g. 742625427)
-                const username = ctx.from.username || ctx.from.first_name || 'Miner';
+                const username = ctx.from.username || ctx.from.first_name || 'Partner';
 
                 console.log(`[BOT] User ${tgId} (${username}) started bot with param: ${startParam || 'NONE'}`);
 
@@ -30,10 +30,10 @@ export class BotService {
                 });
 
                 const isPremium = ctx.from.is_premium || false;
-                const { level, bonusGold, tierName } = calculateTLT(tgId, isPremium);
+                const { welcomeBonus, tierName } = calculateLoyaltyTier(tgId, isPremium);
 
                 if (!user) {
-                    // Referral linkage: Only if startParam is a valid user ID and not self
+                    // Referral linkage
                     let validReferrerId: string | null = null;
                     if (startParam && startParam !== tgId) {
                         const referrerExists = await prisma.user.findUnique({ where: { id: startParam } });
@@ -42,28 +42,28 @@ export class BotService {
                         }
                     }
 
-                    // 3. Create user immediately from Bot API
-                    // This is the "Sakti" part: Recording it the moment they hit /start
+                    // 3. Create user from Bot API
                     user = await prisma.user.create({
                         data: {
                             id: tgId,
-                            telegramUsername: ctx.from.username || null,
+                            telegramUsername: ctx.from.username ? `@${ctx.from.username}` : null,
                             isPremium: isPremium,
-                            minerLevel: level,
-                            goldBalance: BigInt(bonusGold),
-                            referrerId: validReferrerId
+                            btclBalance: welcomeBonus,
+                            tierLevel: 1,
+                            referrerId: validReferrerId,
+                            transactions: {
+                                create: {
+                                    type: 'BONUS_BOUNTY',
+                                    amount: welcomeBonus,
+                                    description: `Welcome Bonus for ${tierName} tier`
+                                }
+                            }
                         }
                     });
 
-                    if (validReferrerId) {
-                        await prisma.user.update({
-                            where: { id: validReferrerId },
-                            data: { referralCount: { increment: 1 } }
-                        });
-                        console.log(`[BOT] Referral Linked: User ${tgId} referred by ${validReferrerId}`);
-                    }
+                    console.log(`[BOT] User ${tgId} registered with $${welcomeBonus} bonus.`);
                 } else {
-                    // 4. Late Binding Logic for existing users without a referrer
+                    // Late Binding Logic
                     if (!user.referrerId && startParam && startParam !== tgId) {
                         const referrerExists = await prisma.user.findUnique({ where: { id: startParam } });
                         if (referrerExists) {
@@ -76,27 +76,34 @@ export class BotService {
                     }
                 }
 
-                // 5. Send Welcome Message with Mini App Button (Loading Screen Style)
+                // 5. Send Welcome Message with Mini App Button
                 const webAppUrl = (process.env.FRONTEND_URL || 'https://bitcoinlabsbot.vercel.app').trim();
                 const logoUrl = `${webAppUrl}/logo.png`;
-
-                console.log(`[BOT] Sending welcome photo: ${logoUrl}`);
 
                 await ctx.replyWithPhoto(
                     logoUrl,
                     {
                         caption:
-                            `<b>WELCOME TO MAXIUM MINER, ${username.toUpperCase()}!</b>\n\n` +
-                            `🎖 <b>TIER:</b> ${tierName.toUpperCase()}\n` +
-                            `⛏ <b>RIG LEVEL:</b> ${level}\n` +
-                            `💰 <b>START BONUS:</b> ${bonusGold.toLocaleString()} GOLD\n\n` +
-                            `<i>Initializing base operations... System ready.</i>`,
+                            `<b>WELCOME TO BITCOIN LABS, ${username.toUpperCase()}!</b>\n\n` +
+                            `🎖 <b>ACCOUNT TIER:</b> ${tierName.toUpperCase()}\n` +
+                            `💰 <b>STARTING BONUS:</b> $${welcomeBonus.toFixed(2)} USDT\n\n` +
+                            `<i>Bitcoin Labs is your premier destination for institutional-grade crypto investments. Start your journey today.</i>`,
                         parse_mode: 'HTML',
                         ...Markup.inlineKeyboard([
-                            [Markup.button.webApp('🚀 PLAY NOW', webAppUrl)]
+                            [Markup.button.webApp('🚀 OPEN DASHBOARD', webAppUrl)]
                         ])
                     }
-                );
+                ).catch((err) => {
+                    console.error('[BOT PHOTO ERROR]', err.message);
+                    // Fallback if image fails
+                    ctx.reply(
+                        `<b>WELCOME TO BITCOIN LABS, ${username.toUpperCase()}!</b>\n\n` +
+                        `🎖 <b>ACCOUNT TIER:</b> ${tierName.toUpperCase()}\n` +
+                        `💰 <b>STARTING BONUS:</b> $${welcomeBonus.toFixed(2)} USDT\n\n` +
+                        `<a href="${webAppUrl}">🚀 OPEN DASHBOARD</a>`,
+                        { parse_mode: 'HTML' }
+                    );
+                });
 
             } catch (error) {
                 console.error('[BOT ERROR]', error);

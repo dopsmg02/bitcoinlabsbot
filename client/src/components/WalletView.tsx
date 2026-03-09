@@ -10,16 +10,9 @@ interface WalletViewProps {
 
 export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWithdraw }) => {
     const [activeTab, setActiveTab] = useState<'DEPOSIT' | 'WITHDRAW'>('DEPOSIT');
-    const [copied, setCopied] = useState(false);
     const [withdrawAddress, setWithdrawAddress] = useState('');
     const [withdrawAmount, setWithdrawAmount] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-
-    const copyAddress = (addr: string) => {
-        navigator.clipboard.writeText(addr);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
 
     const handleWithdraw = async () => {
         if (!withdrawAmount || !withdrawAddress) return;
@@ -36,62 +29,64 @@ export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWit
         <framerMotion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex-1 overflow-y-auto no-scrollbar pb-32 pt-4 px-1"
+            className="flex-1 overflow-y-auto no-scrollbar pb-32 pt-4 px-4 noise-filter"
         >
-            <div className="mb-6 px-2">
-                <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">Financial <span className="text-indigo-400">Vault</span></h2>
-                <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">Manage your funds securely</p>
+            <div className="mb-8">
+                <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">Financial <span className="text-mint">Vault</span></h2>
+                <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.3em] mt-1.5">Capital management protocol</p>
             </div>
 
-            {/* Toggle */}
-            <div className="flex bg-slate-900/40 p-1 rounded-3xl mb-8 border border-white/5">
+            {/* Toggle (Tabs Design) */}
+            <div className="flex bg-black/40 p-1.5 rounded-[28px] mb-10 border border-white/5 gap-1.5">
                 <button
                     onClick={() => setActiveTab('DEPOSIT')}
-                    className={`flex-1 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all
-            ${activeTab === 'DEPOSIT' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}
+                    className={`flex-1 py-4 rounded-[22px] font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 transition-all
+            ${activeTab === 'DEPOSIT' ? 'bg-white text-black shadow-2xl scale-100' : 'text-white/20 hover:text-white/40 scale-95'}
           `}
                 >
-                    <ArrowDownLeft size={16} />
+                    <ArrowDownLeft size={18} strokeWidth={3} />
                     Deposit
                 </button>
                 <button
                     onClick={() => setActiveTab('WITHDRAW')}
-                    className={`flex-1 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all
-            ${activeTab === 'WITHDRAW' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}
+                    className={`flex-1 py-4 rounded-[22px] font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 transition-all
+            ${activeTab === 'WITHDRAW' ? 'bg-white text-black shadow-2xl scale-100' : 'text-white/20 hover:text-white/40 scale-95'}
           `}
                 >
-                    <ArrowUpRight size={16} />
+                    <ArrowUpRight size={18} strokeWidth={3} />
                     Withdraw
                 </button>
             </div>
 
             {activeTab === 'DEPOSIT' ? (
                 <div className="space-y-6">
-                    <div className="bg-slate-900/60 backdrop-blur-md border border-white/10 rounded-[40px] p-8 text-center relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-6 opacity-20"><ShieldCheck size={64} className="text-indigo-400" /></div>
+                    <div className="bg-zinc-950 border-2 border-white/5 rounded-[40px] p-8 text-center relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-20 transition-opacity">
+                            <ShieldCheck size={80} className="text-mint" />
+                        </div>
 
                         <div className="relative z-10">
-                            <div className="bg-indigo-500/10 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-indigo-500/20">
-                                <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" alt="USDT" className="w-10 h-10" />
+                            <div className="bg-mint/5 w-20 h-20 rounded-[32px] flex items-center justify-center mx-auto mb-8 border-2 border-mint/10 shadow-[0_0_30px_rgba(0,255,157,0.05)]">
+                                <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" alt="USDT" className="w-12 h-12" />
                             </div>
-                            <h3 className="text-xl font-black text-white italic tracking-tighter uppercase mb-2">USDT BEP20 Deposit</h3>
-                            <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest leading-relaxed px-4">
-                                All deposits are processed automatically via Plisio gateway. Min deposit: $10.00
+                            <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase mb-2 leading-none">USDT BEP20</h3>
+                            <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.3em] leading-relaxed px-4">
+                                Min deposit: $10.00 • Instant Sync
                             </p>
 
-                            <div className="mt-10 bg-black/40 p-5 rounded-3xl border border-white/10">
-                                <p className="text-[8px] text-white/30 font-black uppercase tracking-widest mb-4">Request New Address</p>
+                            <div className="mt-12 bg-black/40 p-8 rounded-[32px] border border-white/5 shadow-inner">
+                                <p className="text-[10px] text-white/10 font-black uppercase tracking-[0.4em] mb-6">Initialize Gateway</p>
                                 <button
-                                    className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-500/20 active:scale-95 transition-all"
+                                    className="w-full bg-mint text-black py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] shadow-2xl active:scale-95 transition-all shadow-mint/10"
                                     onClick={() => onNotify?.('info', 'Deposit gateway initializing...')}
                                 >
-                                    Generate Payment
+                                    Generate Invoice
                                 </button>
                             </div>
 
-                            <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-emerald-400 font-bold uppercase">
-                                <Check size={14} />
-                                Network Fee: ~0.15 USDT (BSC)
+                            <div className="mt-8 flex items-center justify-center gap-3 text-[10px] text-mint/40 font-black uppercase tracking-widest">
+                                <Check size={16} strokeWidth={3} />
+                                Network Fee: ~0.15 USDT
                             </div>
                         </div>
                     </div>
@@ -102,15 +97,15 @@ export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWit
                 </div>
             ) : (
                 <div className="space-y-6">
-                    <div className="bg-slate-900/60 backdrop-blur-md border border-white/10 rounded-[40px] p-8 relative overflow-hidden">
+                    <div className="bg-zinc-950 border-2 border-white/5 rounded-[40px] p-8 relative overflow-hidden group">
                         <div className="relative z-10">
                             <div className="flex justify-between items-center mb-10">
                                 <div>
-                                    <p className="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Available for Payout</p>
-                                    <h3 className="text-3xl font-black text-white italic tracking-tighter">${Number(profile?.balance || 0).toFixed(2)}</h3>
+                                    <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.3em] mb-2 leading-none">Liquid Assets</p>
+                                    <h3 className="text-4xl font-black text-white italic tracking-tighter leading-none">${Number(profile?.btclBalance || 0).toFixed(2)}</h3>
                                 </div>
-                                <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20">
-                                    <Wallet className="text-emerald-400" />
+                                <div className="bg-mint/5 p-4 rounded-2xl border-2 border-mint/10 shadow-[0_0_20px_rgba(0,255,157,0.05)]">
+                                    <Wallet className="text-mint w-7 h-7" />
                                 </div>
                             </div>
 
@@ -144,16 +139,16 @@ export const WalletView: React.FC<WalletViewProps> = ({ profile, onNotify, onWit
                                     </div>
                                 </div>
 
-                                <div className="pt-4">
+                                <div className="pt-8">
                                     <button
                                         disabled={isLoading || !withdrawAmount || !withdrawAddress.startsWith('0x')}
                                         onClick={handleWithdraw}
-                                        className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 group disabled:opacity-30 disabled:grayscale"
+                                        className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.25em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 group disabled:opacity-20 disabled:grayscale"
                                     >
                                         {isLoading ? <Loader2 className="animate-spin" /> : (
                                             <>
-                                                Submit Payout
-                                                <ExternalLink size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                                Execute Settlement
+                                                <ExternalLink size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" strokeWidth={3} />
                                             </>
                                         )}
                                     </button>

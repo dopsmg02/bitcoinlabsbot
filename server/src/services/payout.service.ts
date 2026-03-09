@@ -27,9 +27,9 @@ export const processWithdrawals = async () => {
         const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
         const contract = new ethers.Contract(CONTRACT_ADDRESS, TOKEN_ABI, wallet);
 
-        // Fetch up to 10 APPROVED withdrawals (manually audited)
+        // Fetch up to 10 PENDING withdrawals (manually audited if needed)
         const pendingWithdrawals = await prisma.withdrawal.findMany({
-            where: { status: 'APPROVED' },
+            where: { status: 'PENDING' },
             take: 10,
             orderBy: { createdAt: 'asc' }
         });
@@ -47,7 +47,7 @@ export const processWithdrawals = async () => {
                 const amountToMint = ethers.parseUnits(withdrawal.amount.toString(), 18);
 
                 // Execute Mint Transaction
-                console.log(`[PAYOUT SERVICE] Minting ${withdrawal.amount} MAX to ${withdrawal.walletAddress}...`);
+                console.log(`[PAYOUT SERVICE] Minting ${withdrawal.amount} BTCL to ${withdrawal.walletAddress}...`);
 
                 const tx = await contract.mint(withdrawal.walletAddress, amountToMint);
                 await tx.wait(1); // Wait for 1 confirmation
@@ -66,11 +66,11 @@ export const processWithdrawals = async () => {
             } catch (txError: any) {
                 console.error(`[PAYOUT SERVICE] ❌ FAILED processing ${withdrawal.id}:`, txError.message);
 
-                // Update DB: Status = FAILED
+                // Update DB: Status = REJECTED
                 await prisma.withdrawal.update({
                     where: { id: withdrawal.id },
                     data: {
-                        status: 'FAILED',
+                        status: 'REJECTED',
                         processedAt: new Date()
                     }
                 });

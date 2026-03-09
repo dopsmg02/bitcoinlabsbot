@@ -36,7 +36,7 @@ export const distributeDailyRoi = async () => {
                     // 1. Update User Balance
                     await tx.user.update({
                         where: { id: inv.userId },
-                        data: { balance: { increment: roiAmount } }
+                        data: { btclBalance: { increment: roiAmount } }
                     });
 
                     // 2. Update Investment's total earned and lastRoiAt

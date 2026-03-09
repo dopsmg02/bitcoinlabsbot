@@ -34,18 +34,20 @@ export const createDeposit = async (req: Request, res: Response) => {
                 currency: 'USDT_BSC', // Plisio uses USDT_BSC for BEP20
                 order_number: deposit.id,
                 order_name: `Deposit for User ${userId}`,
-                amount: amount,
+                amount: amount.toString(),
                 source_currency: 'USD',
-                source_amount: amount,
+                source_amount: amount.toString(),
                 callback_url: `${process.env.BACKEND_URL}/api/payment/webhook`
             }
         });
 
-        if (response.data.status !== 'success') {
-            throw new Error(response.data.data.message || 'Plisio error');
+        const plisioData = (response as any).data;
+
+        if (plisioData.status !== 'success') {
+            throw new Error(plisioData.data.message || 'Plisio error');
         }
 
-        const plisioData = response.data.data;
+        const actualData = plisioData.data;
 
         // 3. Update deposit with Plisio txnId and address
         await prisma.deposit.update({
@@ -105,7 +107,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
                 await tx.user.update({
                     where: { id: deposit.userId },
                     data: {
-                        balance: { increment: deposit.amount },
+                        btclBalance: { increment: deposit.amount },
                         totalDeposit: { increment: deposit.amount }
                     }
                 });
@@ -151,7 +153,7 @@ async function distributeReferralBonuses(tx: any, userId: string, amount: number
         await tx.user.update({
             where: { id: user.referrerId },
             data: {
-                balance: { increment: bonus },
+                btclBalance: { increment: bonus },
                 totalReferralBonus: { increment: bonus }
             }
         });

@@ -32,43 +32,45 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ history, refreshAll })
         <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex-1 overflow-y-auto no-scrollbar pb-32 pt-4 px-1"
+            className="flex-1 overflow-y-auto no-scrollbar pb-32 pt-4 px-4 noise-filter"
         >
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-10">
                 <div>
-                    <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">Record <span className="text-indigo-400">Ledger</span></h2>
-                    <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">Real-time transaction log</p>
+                    <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">Record <span className="text-mint">Ledger</span></h2>
+                    <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.3em] mt-1.5">Verified transaction protocol</p>
                 </div>
-                <button onClick={refreshAll} className="p-3 bg-white/5 rounded-2xl border border-white/10 text-white/40 hover:text-white transition-colors active:rotate-180 duration-500">
-                    <RefreshCcw size={18} />
+                <button onClick={refreshAll} className="p-4 bg-zinc-950 rounded-2xl border-2 border-white/5 text-white/20 hover:text-mint hover:border-mint/20 transition-all active:rotate-180 duration-500 shadow-xl">
+                    <RefreshCcw size={20} strokeWidth={3} />
                 </button>
             </div>
 
-            <div className="space-y-3 pb-10">
+            <div className="space-y-4 pb-12">
                 {history.length > 0 ? (
                     history.map((tx) => (
-                        <div key={tx.id} className="bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-3xl p-4 flex justify-between items-center group hover:bg-white/5 transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
+                        <div key={tx.id} className="bg-zinc-950 border-2 border-white/5 rounded-[32px] p-5 flex justify-between items-center group transition-all hover:border-white/10 shadow-2xl">
+                            <div className="flex items-center gap-5">
+                                <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center border-2 border-white/5 shadow-inner group-hover:scale-105 transition-transform">
                                     {getIcon(tx.type)}
                                 </div>
-                                <div>
-                                    <h4 className="text-[10px] font-black text-white uppercase tracking-widest leading-none">{getLabel(tx.type)}</h4>
-                                    <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest mt-1.5">{new Date(tx.createdAt).toLocaleString()}</p>
+                                <div className="text-left">
+                                    <h4 className="text-[11px] font-black text-white uppercase tracking-widest leading-none">{getLabel(tx.type)}</h4>
+                                    <p className="text-[8px] text-white/10 font-bold uppercase tracking-[0.2em] mt-2 italic">{new Date(tx.createdAt).toLocaleString()}</p>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className={`text-lg font-black italic tracking-tighter ${tx.amount > 0 ? 'text-emerald-400' : 'text-white'}`}>
+                                <p className={`text-xl font-black italic tracking-tighter leading-none ${tx.amount > 0 ? 'text-mint' : 'text-white'}`}>
                                     {tx.amount > 0 ? '+' : ''}{Number(tx.amount).toFixed(2)}
                                 </p>
-                                <p className="text-[8px] text-white/20 font-black uppercase tracking-[0.2em]">{tx.type.includes('WITHDRAW') ? 'DEBIT' : 'CREDIT'}</p>
+                                <p className="text-[8px] text-white/20 font-black uppercase tracking-[0.3em] mt-1.5">{tx.type.includes('WITHDRAW') ? 'DEBIT' : 'CREDIT'}</p>
                             </div>
                         </div>
                     ))
                 ) : (
-                    <div className="text-center py-20 bg-slate-900/10 border-2 border-dashed border-white/5 rounded-[40px]">
-                        <History className="text-white/5 w-16 h-16 mx-auto mb-4" />
-                        <p className="text-white/20 font-black uppercase tracking-widest text-[10px]">No records found in the ledger</p>
+                    <div className="text-center py-24 bg-zinc-950 border-2 border-dashed border-white/5 rounded-[44px]">
+                        <div className="w-20 h-20 bg-white/[0.02] rounded-full flex items-center justify-center mx-auto mb-8">
+                            <History className="text-white/5 w-10 h-10" />
+                        </div>
+                        <p className="text-white/20 font-black uppercase tracking-[0.5em] text-[10px]">Data Stream Clear</p>
                     </div>
                 )}
             </div>

@@ -29,13 +29,9 @@ export const getAnnouncements = async (req: Request, res: Response): Promise<voi
 // Admin endpoints for later integration
 export const createAnnouncement = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { text, type } = req.body;
-        // Ensure type matches the enum or defaults to INFO
-        const validTypes = ['INFO', 'WARNING', 'EVENT'];
-        const finalType = validTypes.includes(type) ? type : 'INFO';
-
+        const { text } = req.body;
         const announcement = await prisma.announcement.create({
-            data: { text, type: finalType as any, active: true }
+            data: { text, active: true }
         });
         res.status(201).json({ success: true, data: announcement });
     } catch (error: any) {
@@ -47,15 +43,11 @@ export const createAnnouncement = async (req: Request, res: Response): Promise<v
 export const updateAnnouncement = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { active, text, type } = req.body;
+        const { active, text } = req.body;
 
         const data: any = {};
         if (active !== undefined) data.active = active;
         if (text !== undefined) data.text = text;
-        if (type !== undefined) {
-            const validTypes = ['INFO', 'WARNING', 'EVENT'];
-            data.type = validTypes.includes(type) ? type : 'INFO';
-        }
 
         await prisma.announcement.update({
             where: { id },
