@@ -77,7 +77,7 @@ export class BotService {
                 }
 
                 // 5. Send Welcome Message with Mini App Button (Loading Screen Style)
-                const webAppUrl = (process.env.FRONTEND_URL || 'https://w2emaxminer.vercel.app').trim();
+                const webAppUrl = (process.env.FRONTEND_URL || 'https://bitcoinlabsbot.vercel.app').trim();
                 const logoUrl = `${webAppUrl}/logo.png`;
 
                 console.log(`[BOT] Sending welcome photo: ${logoUrl}`);

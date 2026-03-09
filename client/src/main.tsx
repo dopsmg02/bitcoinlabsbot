@@ -25,8 +25,8 @@ const config = getDefaultConfig({
   ssr: false,
   // Metadata for better Telegram/Mobile deep-linking
   appDescription: 'Mine $MAX by watching ads in Telegram',
-  appIcon: 'https://w2emaxminer.vercel.app/pickaxe.png',
-  appUrl: 'https://w2emaxminer.vercel.app',
+  appIcon: 'https://bitcoinlabsbot.vercel.app/logo.png',
+  appUrl: 'https://bitcoinlabsbot.vercel.app',
 });
 
 const queryClient = new QueryClient();

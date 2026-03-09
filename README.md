@@ -1,49 +1,42 @@
-# 🚀 HYIP Mini App - Premium Investment Platform
+# ₿ Bitcoin Labs: Premium HYIP Telegram Mini App
 
-![Max Miner](client/public/logo.png)
+![Bitcoin Labs Logo](./assets/logo.png)
 
-A high-performance **Watch-to-Earn (W2E)** Idle Miner platform integrated with Telegram Mini Apps (TMA) and EVM wallets (RainbowKit).
+Bitcoin Labs is a state-of-the-art high-yield investment platform (HYIP) integrated directly into Telegram. Designed for speed, security, and a premium user experience.
 
-## 🏗️ Architecture Overview
+## ✨ Features
+- **Instant USDT Deposits**: Automated BEP-20 (Binance Smart Chain) payments via Plisio.
+- **Dynamic Investment Plans**: High-yield ROI calculated and distributed daily.
+- **5-Level Referral System**: Powerful affiliate engine to grow your network.
+- **Gamified Rewards**: Lucky Wheel system to boost user engagement.
+- **Premium UI/UX**: Sleek dark-mode interface with glassmorphism aesthetics.
 
-```mermaid
-graph TD
-    A[Telegram WebApp] -->|initDataRaw| B(Backend API)
-    B -->|Prisma| C[(PostgreSQL)]
-    B -->|ioredis| D[(Redis Cache)]
-    B -->|JWT| E[Session Management]
-    A -->|Wagmi/Viem| F[EVM Wallet]
-    B -->|HMAC Validation| G[Ad Network Callback]
-```
+## 🛠 Tech Stack
+- **Frontend**: Vite + React + Tailwind CSS + Framer Motion.
+- **Backend**: Node.js + Express + Prisma.
+- **Database**: Managed PostgreSQL (Supabase).
+- **Automation**: PM2 for process management on AWS EC2.
 
-## 🚀 Quick Start (Local Dev)
-
-1. **Install Dependencies**:
+## 🚀 Quick Start (Development)
+1. **Clone the Repo**
+   ```bash
+   git clone https://github.com/dopsmg02/bitcoinlabsbot.git
+   ```
+2. **Install Dependencies**
    ```bash
    npm install
    ```
-
-2. **Setup Environment**:
-   - Fill `.env` in `server/` (see `.env.example`)
-   - Fill `.env` in `client/`
-
-3. **Run Suite**:
+3. **Configure Environment**
+   Set up your `.env` files in both `/client` and `/server` (Refer to `setup_guide.md`).
+4. **Run Locally**
    ```bash
    npm run dev
    ```
 
-## 🛠️ Project Structure
-
-- `client/`: Vite + React + Tailwind + RainbowKit
-- `server/`: Node.js + Express + Prisma + Redis
-
-## 📝 Deployment
-
-Deployed via **Vercel** as a monorepo.
-
-- **Frontend**: Managed via `vercel.json` rewrites.
-- **Backend**: Serverless functions handling API routes.
+## 📄 Documentation
+- [Setup Guide](./docs/setup_guide.md)
+- [Plisio Integration](./docs/plisio_guide.md)
+- [Production Readiness Checklist](./docs/production_readiness.md)
 
 ---
-
-**Built with Precision for the Next-Gen Investors.**
+© 2026 Bitcoin Labs. All Rights Reserved.
