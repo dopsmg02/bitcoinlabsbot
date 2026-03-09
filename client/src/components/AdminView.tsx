@@ -37,6 +37,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
     const [newNewsText, setNewNewsText] = useState('');
     const [newNewsType, setNewNewsType] = useState('INFO');
     const [loadingNews, setLoadingNews] = useState(false);
+    const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
+    const [editNewsText, setEditNewsText] = useState('');
+    const [editNewsType, setEditNewsType] = useState('INFO');
 
     useEffect(() => {
         loadStats();
@@ -221,6 +224,25 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
         } catch (e) {
             onNotify('error', 'Failed to toggle status');
         }
+    };
+
+    const handleSaveEditNews = async (id: string) => {
+        try {
+            const res = await api.adminUpdateAnnouncement(id, { text: editNewsText, type: editNewsType });
+            if (res.success) {
+                onNotify('success', 'Announcement updated');
+                setEditingNewsId(null);
+                loadNews();
+            }
+        } catch (e) {
+            onNotify('error', 'Failed to update');
+        }
+    };
+
+    const startEditingNews = (news: any) => {
+        setEditingNewsId(news.id);
+        setEditNewsText(news.text);
+        setEditNewsType(news.type);
     };
 
     return (
@@ -504,20 +526,60 @@ export const AdminView: React.FC<AdminViewProps> = ({ onClose, userRole, onNotif
                                 {loadingNews ? <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div> :
                                     announcements.length === 0 ? <div className="p-8 text-center text-slate-500 text-xs italic">No messages found.</div> :
                                         announcements.map(news => (
-                                            <div key={news.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
-                                                <div className="flex-1 pr-4">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${news.type === 'WARNING' ? 'bg-amber-500/20 text-amber-400' : news.type === 'EVENT' ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
-                                                            {news.type}
-                                                        </span>
-                                                        <span className="text-[10px] text-slate-500 font-mono">{new Date(news.createdAt).toLocaleDateString()}</span>
+                                            <div key={news.id} className="p-4 flex flex-col gap-3 hover:bg-white/5 transition-colors">
+                                                {editingNewsId === news.id ? (
+                                                    <div className="space-y-3">
+                                                        <textarea
+                                                            value={editNewsText}
+                                                            onChange={e => setEditNewsText(e.target.value)}
+                                                            className="w-full bg-black/60 border border-indigo-500/50 rounded-xl p-3 text-xs focus:outline-none"
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <select
+                                                                value={editNewsType}
+                                                                onChange={e => setEditNewsType(e.target.value)}
+                                                                className="bg-slate-800 border-none rounded-lg text-[10px] px-3 font-bold outline-none"
+                                                            >
+                                                                <option value="INFO">INFO</option>
+                                                                <option value="EVENT">EVENT</option>
+                                                                <option value="WARNING">WARNING</option>
+                                                            </select>
+                                                            <div className="flex-1 flex gap-2 justify-end">
+                                                                <button
+                                                                    onClick={() => setEditingNewsId(null)}
+                                                                    className="px-4 py-2 bg-white/5 rounded-lg text-[10px] font-black uppercase"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleSaveEditNews(news.id)}
+                                                                    className="px-4 py-2 bg-indigo-600 rounded-lg text-[10px] font-black uppercase"
+                                                                >
+                                                                    Save
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-xs text-white opacity-90">{news.text}</div>
-                                                </div>
-                                                <button onClick={() => handleToggleNews(news.id, news.active)}
-                                                    className={`px-4 py-2 rounded-xl font-black uppercase text-[9px] border ${news.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                                                    {news.active ? 'Active' : 'Archived'}
-                                                </button>
+                                                ) : (
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex-1 pr-4">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${news.type === 'WARNING' ? 'bg-amber-500/20 text-amber-400' : news.type === 'EVENT' ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                                                                    {news.type}
+                                                                </span>
+                                                                <span className="text-[10px] text-slate-500 font-mono">{new Date(news.createdAt).toLocaleDateString()}</span>
+                                                                <button onClick={() => startEditingNews(news)} className="text-indigo-400 hover:text-indigo-300 transition-colors">
+                                                                    <Edit3 size={12} />
+                                                                </button>
+                                                            </div>
+                                                            <div className="text-xs text-white opacity-90">{news.text}</div>
+                                                        </div>
+                                                        <button onClick={() => handleToggleNews(news.id, news.active)}
+                                                            className={`px-4 py-2 rounded-xl font-black uppercase text-[9px] border ${news.active ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                                                            {news.active ? 'Active' : 'Archived'}
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))
                                 }

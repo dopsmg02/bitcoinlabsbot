@@ -73,9 +73,13 @@ class Api {
     }
 
     async adminToggleAnnouncement(id: string, active: boolean) {
+        return this.adminUpdateAnnouncement(id, { active });
+    }
+
+    async adminUpdateAnnouncement(id: string, data: { text?: string, type?: string, active?: boolean }) {
         return this.request(`/announcement/${id}`, {
             method: 'PATCH',
-            body: JSON.stringify({ active })
+            body: JSON.stringify(data)
         });
     }
 

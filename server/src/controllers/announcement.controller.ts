@@ -30,25 +30,40 @@ export const getAnnouncements = async (req: Request, res: Response): Promise<voi
 export const createAnnouncement = async (req: Request, res: Response): Promise<void> => {
     try {
         const { text, type } = req.body;
+        // Ensure type matches the enum or defaults to INFO
+        const validTypes = ['INFO', 'WARNING', 'EVENT'];
+        const finalType = validTypes.includes(type) ? type : 'INFO';
+
         const announcement = await prisma.announcement.create({
-            data: { text, type, active: true }
+            data: { text, type: finalType as any, active: true }
         });
         res.status(201).json({ success: true, data: announcement });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' });
+    } catch (error: any) {
+        console.error('Create Announcement Error:', error);
+        res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
 };
 
-export const toggleAnnouncement = async (req: Request, res: Response): Promise<void> => {
+export const updateAnnouncement = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { active } = req.body;
+        const { active, text, type } = req.body;
+
+        const data: any = {};
+        if (active !== undefined) data.active = active;
+        if (text !== undefined) data.text = text;
+        if (type !== undefined) {
+            const validTypes = ['INFO', 'WARNING', 'EVENT'];
+            data.type = validTypes.includes(type) ? type : 'INFO';
+        }
+
         await prisma.announcement.update({
             where: { id },
-            data: { active }
+            data
         });
         res.status(200).json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' });
+    } catch (error: any) {
+        console.error('Update Announcement Error:', error);
+        res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
 };
