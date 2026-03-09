@@ -72,18 +72,24 @@ export class BotService {
                     }
                 }
 
-                // 5. Send Welcome Message with Mini App Button
-                const webAppUrl = process.env.FRONTEND_URL || 'https://maxminer.vercel.app';
+                // 5. Send Welcome Message with Mini App Button (Loading Screen Style)
+                const webAppUrl = process.env.FRONTEND_URL || 'https://w2emaxminer.vercel.app';
+                const logoUrl = `${webAppUrl}/logo.png`;
 
-                await ctx.replyWithHTML(
-                    `<b>Welcome to Max Miner, ${username}!</b>\n\n` +
-                    `🎖 <b>Loyalty Tier:</b> ${tierName}\n` +
-                    `⛏ <b>Start Level:</b> Lv. ${level}\n` +
-                    `💰 <b>Initial Reward:</b> ${bonusGold.toLocaleString()} Gold\n\n` +
-                    `Start your mining journey and earn $MAX tokens. Keep your rig fueled to maximize yields!`,
-                    Markup.inlineKeyboard([
-                        [Markup.button.webApp('🚀 PLAY NOW', webAppUrl)]
-                    ])
+                await ctx.replyWithPhoto(
+                    logoUrl,
+                    {
+                        caption:
+                            `<b>WELCOME TO MAXIUM MINER, ${username.toUpperCase()}!</b>\n\n` +
+                            `🎖 <b>TIER:</b> ${tierName.toUpperCase()}\n` +
+                            `⛏ <b>RIG LEVEL:</b> ${level}\n` +
+                            `💰 <b>START BONUS:</b> ${bonusGold.toLocaleString()} GOLD\n\n` +
+                            `<i>Initializing base operations... System ready.</i>`,
+                        parse_mode: 'HTML',
+                        ...Markup.inlineKeyboard([
+                            [Markup.button.webApp('🚀 PLAY NOW', webAppUrl)]
+                        ])
+                    }
                 );
 
             } catch (error) {

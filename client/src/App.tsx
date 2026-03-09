@@ -322,41 +322,57 @@ const App: React.FC = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar pb-24">
 
             {/* News Ticker - Floating & Dismissible */}
-            <AnimatePresence>
-              {showTicker && announcements.length > 0 && announcements.some(a => a.active) && (
-                <motion.div
-                  initial={{ y: -50, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -50, opacity: 0 }}
-                  className="fixed top-4 left-4 right-4 z-[80] bg-indigo-600 border border-white/20 rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex items-center h-10"
-                >
-                  <div className="flex-1 overflow-hidden whitespace-nowrap relative h-full flex items-center">
+            {(() => {
+              const activeAnnouncements = announcements.filter(a => a.active);
+              if (activeAnnouncements.length === 0) return null;
+
+              const tickerType = activeAnnouncements.some(a => a.type === 'WARNING') ? 'WARNING' :
+                activeAnnouncements.some(a => a.type === 'EVENT') ? 'EVENT' : 'INFO';
+
+              const styles: any = {
+                WARNING: { bg: 'bg-amber-600', from: 'from-amber-600' },
+                EVENT: { bg: 'bg-rose-600', from: 'from-rose-600' },
+                INFO: { bg: 'bg-indigo-600', from: 'from-indigo-600' }
+              }[tickerType];
+
+              return (
+                <AnimatePresence>
+                  {showTicker && (
                     <motion.div
-                      animate={{ x: ["100%", "-100%"] }}
-                      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                      className="inline-block text-[10px] font-black uppercase tracking-[0.15em] text-white"
+                      initial={{ y: -50, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -50, opacity: 0 }}
+                      className={`fixed top-4 left-4 right-4 z-[80] ${styles.bg} border border-white/20 rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex items-center h-10`}
                     >
-                      {announcements.filter(a => a.active).map(a => `[${a.type}] ${a.text}`).join('    •    ')}
+                      <div className="flex-1 overflow-hidden whitespace-nowrap relative h-full flex items-center">
+                        <motion.div
+                          animate={{ x: ["100%", "-100%"] }}
+                          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                          className="inline-block text-[10px] font-black uppercase tracking-[0.15em] text-white"
+                        >
+                          {activeAnnouncements.map(a => `[${a.type}] ${a.text}`).join('    •    ')}
+                        </motion.div>
+
+                        {/* Visual accents for ticker */}
+                        <div className={`absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r ${styles.from} to-transparent z-10`} />
+                        <div className={`absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l ${styles.from} to-transparent z-10`} />
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setShowTicker(false);
+                          const activeIds = activeAnnouncements.map(a => a.id).sort().join(',');
+                          localStorage.setItem('dismissed_announcements', activeIds);
+                        }}
+                        className="h-full px-3 text-white border-l border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center"
+                      >
+                        <span className="text-xs font-black uppercase text-white/60 hover:text-white">Close</span>
+                      </button>
                     </motion.div>
-
-                    {/* Visual accents for ticker */}
-                    <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-indigo-600 to-transparent z-10" />
-                    <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-indigo-600 to-transparent z-10" />
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setShowTicker(false);
-                      const activeIds = announcements.filter(a => a.active).map(a => a.id).sort().join(',');
-                      localStorage.setItem('dismissed_announcements', activeIds);
-                    }}
-                    className="h-full px-3 text-white border-l border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center"
-                  >
-                    <span className="text-xs font-black uppercase text-white/60 hover:text-white">Close</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  )}
+                </AnimatePresence>
+              );
+            })()}
 
             {/* Top Info Cards - Compact */}
             <div className="grid grid-cols-2 gap-1 mb-1 text-center font-black italic uppercase tracking-tighter">
