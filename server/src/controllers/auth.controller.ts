@@ -2,10 +2,12 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../prisma/client';
 import { validateInitData } from '../utils/telegramAuth';
-import { calculateTLT } from '../utils/tlt';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'test_bot_token';
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
+
+// Simple Welcome Bonus for HYIP
+const WELCOME_BONUS = 0.50; // $0.50 welcome bonus
 
 export const authenticateTelegram = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -53,27 +55,28 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
             where: { id: userIdStr }
         });
 
+        const isNewUser = !user;
+
         if (user) {
             const updateData: any = {
                 lastLoginIp: clientIp,
                 isPremium: isPremium
             };
+            
+            // Referral linking for existing users who didn't have a referrer before
             if (!user.referrerId && referrerId && typeof referrerId === 'string' && referrerId !== userIdStr) {
                 const referrerExists = await prisma.user.findUnique({ where: { id: referrerId } });
                 if (referrerExists) {
                     updateData.referrerId = referrerId;
                 }
             }
-            await prisma.user.update({
+            
+            user = await prisma.user.update({
                 where: { id: userIdStr },
                 data: updateData
             });
-        }
-
-        const tltResult = calculateTLT(userIdStr, isPremium);
-        const isNewUser = !user;
-
-        if (!user) {
+        } else {
+            // Create New User
             let validReferrerId: string | null = null;
             if (referrerId && typeof referrerId === 'string' && referrerId !== userIdStr) {
                 const referrerExists = await prisma.user.findUnique({ where: { id: referrerId } });
@@ -87,10 +90,16 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
                     id: userIdStr,
                     telegramUsername: tgUser.username ? `@${tgUser.username}` : null,
                     isPremium: isPremium,
-                    minerLevel: tltResult.level,
-                    goldBalance: BigInt(tltResult.bonusGold),
+                    balance: WELCOME_BONUS,
                     referrerId: validReferrerId,
-                    lastLoginIp: clientIp
+                    lastLoginIp: clientIp,
+                    transactions: {
+                        create: {
+                            type: 'BONUS_BOUNTY',
+                            amount: WELCOME_BONUS,
+                            description: 'Welcome Bonus for joining!'
+                        }
+                    }
                 }
             });
         }
@@ -106,16 +115,14 @@ export const authenticateTelegram = async (req: Request, res: Response): Promise
             token,
             user: {
                 id: user.id,
-                role: (String(user.id) === '742625427' || String(user.id) === '74262542') ? 'SUPER_ADMIN' : (user as any).role,
+                role: user.role,
                 telegramUsername: user.telegramUsername,
                 isPremium: user.isPremium,
-                minerLevel: user.minerLevel,
-                goldBalance: user.goldBalance.toString(),
-                maxBalance: user.maxBalance,
+                balance: user.balance.toString(),
+                totalDeposit: user.totalDeposit.toString(),
                 isNew: isNewUser
             },
-            isNewUser,
-            tlt: tltResult
+            isNewUser
         });
 
     } catch (error) {

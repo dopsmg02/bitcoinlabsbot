@@ -12,7 +12,7 @@ router.use(authenticateJWT);
 router.get('/stats', requireAdmin, adminController.getDashboardStats);
 router.get('/users', requireAdmin, adminController.getUsers);
 router.post('/users/:id/adjust', requireAdmin, adminController.adjustUserBalance);
-router.post('/users/:id/level', requireAdmin, adminController.setUserLevel);
+router.post('/users/:id/tickets', requireAdmin, adminController.giveLuckyTickets);
 router.post('/users/:id/ban', requireAdmin, adminController.toggleShadowBan);
 
 // Super Admin Only Routes

@@ -13,7 +13,7 @@ datasource db {
 }
 
 enum Role {
-  PLAYER
+  USER
   ADMIN
   SUPER_ADMIN
 }
@@ -22,148 +22,172 @@ model User {
   id                    String        @id // Telegram ID
   telegramUsername      String?
   isPremium             Boolean       @default(false)
-  role                  Role          @default(PLAYER)
+  role                  Role          @default(USER)
   
-  // TLT System & Progression
-  minerLevel            Int           @default(1)
-  weeklyMiningCount     Int           @default(0)
-  referralCount         Int           @default(0)
+  // Balances
+  balance               Decimal       @default(0) @db.Decimal(18, 2)
+  totalDeposit          Decimal       @default(0) @db.Decimal(18, 2)
+  totalWithdraw         Decimal       @default(0) @db.Decimal(18, 2)
+  totalReferralBonus    Decimal       @default(0) @db.Decimal(18, 2)
   
-  // Balances (Server-Authoritative)
-  goldBalance           BigInt        @default(0)
-  maxBalance            Decimal       @default(0) @db.Decimal(18, 2)
-  
-  // Fuel Mechanics (Server-Side Calculation)
-  // Fuel remaining = max(0, 900 - (now - fuelUpdatedAt))
-  fuelUpdatedAt         DateTime      @default(now())
-  lastSyncAt            DateTime?     // Tracks the last 10s client sync tick
-  
-  // [CRITICAL FIX #4] REMOVED adWatchCountToday — use rolling 24h COUNT(AdSession) instead
-  // Ad tracking is now done by querying AdSession records within last 24 hours
-  lastAdWatch           DateTime?
-  
-  // Anti-Cheat
-  fraudScore            Int           @default(0)
+  // Anti-Cheat & Security
   isBanned              Boolean       @default(false)
-  lastLoginIp           String?       // [MEDIUM FIX #2] Track IP on auth
+  lastLoginIp           String?       
 
   // Referral System (Self-relation)
   referrerId            String?       
   referrer              User?         @relation("UserToReferrer", fields: [referrerId], references: [id])
   downlines             User[]        @relation("UserToReferrer")
 
-  // [MEDIUM FIX #1] Withdrawal Cooldown Tracking
-  lastWithdrawAt        DateTime?
-
   // Timestamps
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
   // Data Relations
-  transactions          Transaction[]
-  adSessions            AdSession[]
+  investments           Investment[]
+  deposits              Deposit[]
   withdrawals           Withdrawal[]
+  transactions          Transaction[]
+  luckySpinTickets      Int           @default(0)
 
-  @@index([referrerId]) // [MEDIUM FIX M1] For efficient referral chain walks
-  @@index([goldBalance(sort: Desc)])
-  @@index([maxBalance(sort: Desc)])
-  @@index([weeklyMiningCount(sort: Desc)])
-  @@index([referralCount(sort: Desc)])
+  @@index([referrerId])
+  @@index([balance(sort: Desc)])
+}
+
+model Plan {
+  id              String   @id @default(uuid())
+  name            String   // e.g., "Silver", "Gold", "VIP"
+  minAmount       Decimal  @db.Decimal(18, 2)
+  maxAmount       Decimal  @db.Decimal(18, 2)
+  dailyRoiPercent Decimal  @db.Decimal(5, 2) // e.g., 2.00%
+  durationDays    Int      // e.g., 30
+  active          Boolean  @default(true)
+  investments     Investment[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Investment {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  planId          String
+  plan            Plan     @relation(fields: [planId], references: [id])
+  
+  amount          Decimal  @db.Decimal(18, 2)
+  dailyRoi        Decimal  @db.Decimal(18, 2) // Cached daily profit amount
+  
+  totalEarned     Decimal  @default(0) @db.Decimal(18, 2)
+  lastRoiAt       DateTime @default(now()) // For daily profit distribution
+  
+  startDate       DateTime @default(now())
+  endDate         DateTime
+  
+  status          InvestmentStatus @default(ACTIVE)
+
+  createdAt       DateTime @default(now())
+
+  @@index([userId, status])
+}
+
+model Deposit {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  
+  amount          Decimal  @db.Decimal(18, 2)
+  currency        String   @default("USDT_BEP20")
+  
+  // Plisio specific fields
+  txnId           String?  @unique // Plisio ID
+  address         String?  // Generated address
+  status          DepositStatus @default(PENDING)
+  
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  @@index([userId, txnId])
+}
+
+model Withdrawal {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  
+  amount          Decimal  @db.Decimal(18, 2)
+  fee             Decimal  @db.Decimal(18, 2)
+  netAmount       Decimal  @db.Decimal(18, 2)
+  
+  walletAddress   String
+  status          WithdrawStatus @default(PENDING)
+  
+  createdAt       DateTime @default(now())
+  processedAt     DateTime?
+
+  @@index([userId, createdAt])
 }
 
 model Transaction {
   id          String   @id @default(uuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+  
   type        TxType
   amount      Decimal  @db.Decimal(18, 2)
-  currency    Currency
   description String?
+  
   createdAt   DateTime @default(now())
 
   @@index([userId, type])
-  @@index([userId, createdAt]) // For rolling window queries
 }
 
-model AdSession {
-  sessionId   String       @id @default(uuid())
-  userId      String
-  user        User         @relation(fields: [userId], references: [id])
-  ipAddress   String?
-  status      SessionStatus @default(PENDING)
-  rewardType  RewardType?
-  createdAt   DateTime     @default(now())
-  completedAt DateTime?
-
-  @@index([userId, status])
-  @@index([userId, createdAt]) // [CRITICAL FIX #4] For rolling 24h ad count query
+enum InvestmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }
 
-// [MEDIUM FIX #1] Withdrawal model for cooldown enforcement
-model Withdrawal {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  amount      Decimal  @db.Decimal(18, 2)
-  fee         Decimal  @db.Decimal(18, 2)
-  walletAddress String
-  status      WithdrawStatus @default(PENDING)
-  createdAt   DateTime @default(now())
-  processedAt DateTime?
-
-  @@index([userId, createdAt])
-}
-
-enum TxType {
-  GOLD_MINE
-  BOX_OPEN
-  CONVERT
-  WITHDRAW
-  REFERRAL_PAYOUT
-  UPGRADE
-}
-
-enum Currency {
-  GOLD
-  MAX
-}
-
-enum SessionStatus {
+enum DepositStatus {
   PENDING
-  VALIDATED
-  REJECTED
-}
-
-enum RewardType {
-  VALUED
-  NOT_VALUED
+  CONFIRMED
+  COMPLETED
+  EXPIRED
+  CANCELLED
+  ERROR
 }
 
 enum WithdrawStatus {
   PENDING
-  APPROVED
+  PROCESSING
   COMPLETED
+  REJECTED
   FAILED
 }
 
-enum NewsType {
-  INFO
-  WARNING
-  EVENT
+enum TxType {
+  DEPOSIT
+  WITHDRAW
+  INVESTMENT
+  ROI_DAILY
+  REFERRAL_LEVEL_1
+  REFERRAL_LEVEL_2
+  REFERRAL_LEVEL_3
+  REFERRAL_LEVEL_4
+  REFERRAL_LEVEL_5
+  BONUS_BOUNTY
+  LUCKY_SPIN
 }
 
 model Announcement {
   id        String   @id @default(uuid())
   text      String
-  type      NewsType @default(INFO)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model SystemConfig {
   id              String   @id @default("GLOBAL")
   maintenanceMode Boolean  @default(false)
-  goldToMaxRate   Decimal  @default(1250) @db.Decimal(18, 2) // e.g., 5000 Gold = 4.0 MAX -> Rate is 1250:1
   updatedAt       DateTime @updatedAt
 }

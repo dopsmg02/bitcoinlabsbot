@@ -4,22 +4,27 @@ import { prisma } from '../prisma/client';
 export const getDashboardStats = async (req: Request, res: Response) => {
     try {
         const totalUsers = await prisma.user.count();
-        const activeMiners = await prisma.user.count({
+        const activeUsers = await prisma.user.count({
             where: {
                 lastLoginIp: { not: null }
             }
         });
 
-        // Use raw query for bigInt sum safely
         const aggregated = await prisma.user.aggregate({
             _sum: {
-                maxBalance: true
+                balance: true,
+                totalDeposit: true,
+                totalWithdraw: true
             }
         });
 
-        const totalMax = aggregated._sum.maxBalance || 0;
+        const activeInvestments = await prisma.investment.aggregate({
+            _sum: {
+                amount: true
+            },
+            where: { status: 'ACTIVE' }
+        });
 
-        // Count pending withdrawals
         const pendingWithdrawals = await prisma.withdrawal.count({
             where: { status: 'PENDING' }
         });
@@ -28,8 +33,11 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             success: true,
             data: {
                 totalUsers,
-                activeMiners,
-                totalMax: Number(totalMax),
+                activeUsers,
+                totalBalance: Number(aggregated._sum.balance || 0),
+                totalDeposits: Number(aggregated._sum.totalDeposit || 0),
+                totalWithdrawals: Number(aggregated._sum.totalWithdraw || 0),
+                activeInvestmentsTotal: Number(activeInvestments._sum.amount || 0),
                 pendingWithdrawals
             }
         });
@@ -67,11 +75,11 @@ export const getUsers = async (req: Request, res: Response) => {
                     id: true,
                     telegramUsername: true,
                     role: true,
-                    minerLevel: true,
-                    maxBalance: true,
-                    goldBalance: true,
+                    balance: true,
+                    totalDeposit: true,
                     isBanned: true,
-                    createdAt: true
+                    createdAt: true,
+                    luckySpinTickets: true
                 }
             }),
             prisma.user.count({ where: whereClause })
@@ -81,7 +89,8 @@ export const getUsers = async (req: Request, res: Response) => {
             success: true,
             data: users.map(u => ({
                 ...u,
-                goldBalance: u.goldBalance.toString() // Convert BigInt for JSON
+                balance: u.balance.toString(),
+                totalDeposit: u.totalDeposit.toString()
             })),
             meta: {
                 total,
@@ -99,7 +108,7 @@ export const getUsers = async (req: Request, res: Response) => {
 export const adjustUserBalance = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { type, amount } = req.body; // type: 'GOLD' | 'MAX', amount: number (can be negative)
+        const { amount, reason } = req.body;
 
         if (!amount || isNaN(amount)) {
             return res.status(400).json({ success: false, error: 'Invalid amount' });
@@ -110,29 +119,31 @@ export const adjustUserBalance = async (req: Request, res: Response) => {
             return res.status(404).json({ success: false, error: 'User not found' });
         }
 
-        let updateData: any = {};
-        if (type === 'GOLD') {
-            const newBalance = user.goldBalance + BigInt(amount);
-            updateData.goldBalance = newBalance < 0n ? 0n : newBalance;
-        } else if (type === 'MAX') {
-            const currentAmount = Number(user.maxBalance);
-            const newBalance = currentAmount + Number(amount);
-            updateData.maxBalance = newBalance < 0 ? 0 : newBalance;
-        } else {
-            return res.status(400).json({ success: false, error: 'Invalid type' });
-        }
+        const amt = Number(amount);
 
-        const updatedUser = await prisma.user.update({
-            where: { id },
-            data: updateData
+        const updatedUser = await prisma.$transaction(async (tx) => {
+            const u = await tx.user.update({
+                where: { id },
+                data: { balance: { increment: amt } }
+            });
+
+            await tx.transaction.create({
+                data: {
+                    userId: id,
+                    type: amt > 0 ? 'BONUS_BOUNTY' : 'WITHDRAW',
+                    amount: Math.abs(amt),
+                    description: `Admin Adjustment: ${reason || 'Manual fix'}`
+                }
+            });
+
+            return u;
         });
 
         res.json({
             success: true,
             data: {
                 id: updatedUser.id,
-                goldBalance: updatedUser.goldBalance.toString(),
-                maxBalance: Number(updatedUser.maxBalance)
+                balance: updatedUser.balance.toString()
             }
         });
     } catch (error) {
@@ -141,24 +152,24 @@ export const adjustUserBalance = async (req: Request, res: Response) => {
     }
 };
 
-export const setUserLevel = async (req: Request, res: Response) => {
+export const giveLuckyTickets = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { level } = req.body;
+        const { amount } = req.body;
 
-        if (typeof level !== 'number' || level < 1 || level > 10) {
-            return res.status(400).json({ success: false, error: 'Invalid level (must be 1-10)' });
+        if (typeof amount !== 'number' || amount < 1) {
+            return res.status(400).json({ success: false, error: 'Invalid amount' });
         }
 
         const updatedUser = await prisma.user.update({
             where: { id },
-            data: { minerLevel: level }
+            data: { luckySpinTickets: { increment: amount } }
         });
 
-        res.json({ success: true, data: { level: updatedUser.minerLevel } });
+        res.json({ success: true, data: { luckySpinTickets: updatedUser.luckySpinTickets } });
     } catch (error) {
-        console.error('setUserLevel error:', error);
-        res.status(500).json({ success: false, error: 'Failed to update level' });
+        console.error('giveLuckyTickets error:', error);
+        res.status(500).json({ success: false, error: 'Failed to grant tickets' });
     }
 };
 
@@ -179,7 +190,7 @@ export const toggleShadowBan = async (req: Request, res: Response) => {
         res.json({ success: true, data: { isBanned: updatedUser.isBanned } });
     } catch (error) {
         console.error('toggleShadowBan error:', error);
-        res.status(500).json({ success: false, error: 'Failed to update shadow ban config' });
+        res.status(500).json({ success: false, error: 'Failed to update user status' });
     }
 };
 
@@ -188,13 +199,14 @@ export const toggleShadowBan = async (req: Request, res: Response) => {
 export const setAdminRole = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { role } = req.body; // 'PLAYER' | 'ADMIN'
+        const { role } = req.body;
 
-        if (role !== 'PLAYER' && role !== 'ADMIN') {
+        if (role !== 'USER' && role !== 'ADMIN') {
             return res.status(400).json({ success: false, error: 'Invalid role' });
         }
 
-        if (id === '742625427') {
+        // Hardcoded protection for root admin (optional but safe)
+        if (id === '6354654519') { // Assuming this is user ID
             return res.status(403).json({ success: false, error: 'Cannot modify SUPER_ADMIN' });
         }
 
@@ -215,7 +227,7 @@ export const getSystemConfig = async (req: Request, res: Response) => {
         let config = await prisma.systemConfig.findUnique({ where: { id: "GLOBAL" } });
         if (!config) {
             config = await prisma.systemConfig.create({
-                data: { id: "GLOBAL", maintenanceMode: false, goldToMaxRate: 1250 }
+                data: { id: "GLOBAL", maintenanceMode: false }
             });
         }
         res.json({ success: true, data: config });
@@ -227,16 +239,12 @@ export const getSystemConfig = async (req: Request, res: Response) => {
 
 export const updateSystemConfig = async (req: Request, res: Response) => {
     try {
-        const { maintenanceMode, goldToMaxRate } = req.body;
-
-        let updateData: any = {};
-        if (typeof maintenanceMode === 'boolean') updateData.maintenanceMode = maintenanceMode;
-        if (goldToMaxRate && !isNaN(goldToMaxRate)) updateData.goldToMaxRate = Number(goldToMaxRate);
+        const { maintenanceMode } = req.body;
 
         const config = await prisma.systemConfig.upsert({
             where: { id: "GLOBAL" },
-            update: updateData,
-            create: { id: "GLOBAL", ...updateData, maintenanceMode: maintenanceMode || false, goldToMaxRate: goldToMaxRate || 1250 }
+            update: { maintenanceMode },
+            create: { id: "GLOBAL", maintenanceMode: maintenanceMode || false }
         });
 
         res.json({ success: true, data: config });
@@ -248,41 +256,32 @@ export const updateSystemConfig = async (req: Request, res: Response) => {
 
 export const getWithdrawals = async (req: Request, res: Response) => {
     try {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 50;
         const status = req.query.status as any;
 
-        const skip = (page - 1) * limit;
         const where: any = {};
         if (status) where.status = status;
 
-        const [items, total] = await Promise.all([
-            prisma.withdrawal.findMany({
-                where,
-                skip,
-                take: limit,
-                orderBy: { createdAt: 'desc' },
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            telegramUsername: true
-                        }
+        const items = await prisma.withdrawal.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        telegramUsername: true
                     }
                 }
-            }),
-            prisma.withdrawal.count({ where })
-        ]);
+            }
+        });
 
         res.json({
             success: true,
-            data: items,
-            meta: {
-                total,
-                page,
-                limit,
-                totalPages: Math.ceil(total / limit)
-            }
+            data: items.map(w => ({
+                ...w,
+                amount: w.amount.toString(),
+                fee: w.fee.toString(),
+                netAmount: w.netAmount.toString()
+            }))
         });
     } catch (error) {
         console.error('getWithdrawals error:', error);
@@ -293,9 +292,9 @@ export const getWithdrawals = async (req: Request, res: Response) => {
 export const updateWithdrawalStatus = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { status } = req.body; // 'COMPLETED' | 'FAILED'
+        const { status } = req.body; // 'COMPLETED' | 'REJECTED'
 
-        if (status !== 'COMPLETED' && status !== 'FAILED') {
+        if (status !== 'COMPLETED' && status !== 'REJECTED') {
             return res.status(400).json({ success: false, error: 'Invalid status' });
         }
 
@@ -313,17 +312,16 @@ export const updateWithdrawalStatus = async (req: Request, res: Response) => {
                 data: { status: 'COMPLETED', processedAt: new Date() }
             });
         } else {
-            // Refund on FAILED
-            const refundAmount = Number(withdrawal.amount) + Number(withdrawal.fee);
+            const refundAmount = Number(withdrawal.amount);
             await prisma.$transaction([
                 prisma.withdrawal.update({
                     where: { id },
-                    data: { status: 'FAILED', processedAt: new Date() }
+                    data: { status: 'REJECTED', processedAt: new Date() }
                 }),
                 prisma.user.update({
                     where: { id: withdrawal.userId },
                     data: {
-                        maxBalance: { increment: refundAmount }
+                        balance: { increment: refundAmount }
                     }
                 }),
                 prisma.transaction.create({
@@ -331,7 +329,6 @@ export const updateWithdrawalStatus = async (req: Request, res: Response) => {
                         userId: withdrawal.userId,
                         type: 'WITHDRAW',
                         amount: refundAmount,
-                        currency: 'MAX',
                         description: `Refund for rejected withdrawal ${id}`
                     }
                 })

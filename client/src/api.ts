@@ -30,7 +30,6 @@ class Api {
             const data = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                // Return text if not JSON (e.g. ad network callback responses)
                 throw new Error(data.error || response.statusText);
             }
             return data;
@@ -57,69 +56,37 @@ class Api {
         return this.request('/user/referrals');
     }
 
-    async getLeaderboard(type: 'GOLD' | 'MAX' | 'REFERRAL' | 'AD') {
-        return this.request(`/leaderboard?type=${type}`);
+    async getPlans() {
+        return this.request('/investment/plans');
+    }
+
+    async invest(planId: string, amount: number) {
+        return this.request('/investment/invest', {
+            method: 'POST',
+            body: JSON.stringify({ planId, amount })
+        });
+    }
+
+    async getMyInvestments() {
+        return this.request('/investment/my-investments');
+    }
+
+    async getTransactionHistory() {
+        return this.request('/user/history');
     }
 
     async getAnnouncements(all = false) {
         return this.request(`/announcement${all ? '?all=true' : ''}`);
     }
 
-    async adminCreateAnnouncement(text: string, type: string) {
-        return this.request('/announcement', {
-            method: 'POST',
-            body: JSON.stringify({ text, type })
+    async spinLuckyWheel() {
+        return this.request('/investment/lucky-spin', {
+            method: 'POST'
         });
-    }
-
-    async adminToggleAnnouncement(id: string, active: boolean) {
-        return this.adminUpdateAnnouncement(id, { active });
-    }
-
-    async adminUpdateAnnouncement(id: string, data: { text?: string, type?: string, active?: boolean }) {
-        return this.request(`/announcement/${id}`, {
-            method: 'PATCH',
-            body: JSON.stringify(data)
-        });
-    }
-
-    async requestAd() {
-        return this.request('/ad/request', { method: 'POST' });
-    }
-
-    // Dev Simulator: directly calls the backend's dev-callback which generates the HMAC and redirects
-    async simulateAdCallback(sessionId: string, userId: string, rewardType: 'valued' | 'not_valued') {
-        const res = await fetch(`${API_URL}/ad/dev-callback?uid=${userId}&custom=${sessionId}&reward_event_type=${rewardType}`);
-        return res.ok;
-    }
-
-    async syncMining(claimedGold: number, lastSyncTimestamp: number) {
-        return this.request('/mine/sync', {
-            method: 'POST',
-            body: JSON.stringify({ claimedGold, lastSyncTimestamp })
-        });
-    }
-
-    async claimAdSDK(sessionId: string) {
-        return this.request('/ad/claim-sdk', {
-            method: 'POST',
-            body: JSON.stringify({ sessionId })
-        });
-    }
-
-    async convertGoldToMax(goldAmount: number) {
-        return this.request('/economy/convert', {
-            method: 'POST',
-            body: JSON.stringify({ goldAmount })
-        });
-    }
-
-    async upgradeMiner() {
-        return this.request('/economy/upgrade', { method: 'POST' });
     }
 
     async requestWithdrawal(amount: number, walletAddress: string) {
-        return this.request('/economy/withdraw', {
+        return this.request('/investment/withdraw', {
             method: 'POST',
             body: JSON.stringify({ amount, walletAddress })
         });
@@ -137,17 +104,17 @@ class Api {
         return this.request(`/admin/users?${query.toString()}`);
     }
 
-    async adminAdjustBalance(userId: string, type: 'GOLD' | 'MAX', amount: number) {
+    async adminAdjustBalance(userId: string, amount: number, reason?: string) {
         return this.request(`/admin/users/${userId}/adjust`, {
             method: 'POST',
-            body: JSON.stringify({ type, amount })
+            body: JSON.stringify({ amount, reason })
         });
     }
 
-    async adminSetLevel(userId: string, level: number) {
-        return this.request(`/admin/users/${userId}/level`, {
+    async adminGrantTickets(userId: string, amount: number) {
+        return this.request(`/admin/users/${userId}/tickets`, {
             method: 'POST',
-            body: JSON.stringify({ level })
+            body: JSON.stringify({ amount })
         });
     }
 
@@ -158,35 +125,15 @@ class Api {
         });
     }
 
-    // --- SUPER ADMIN ENDPOINTS ---
-
-    async adminSetRole(userId: string, role: 'PLAYER' | 'ADMIN') {
-        return this.request(`/admin/users/${userId}/role`, {
-            method: 'POST',
-            body: JSON.stringify({ role })
-        });
-    }
-
-    async getAdminConfig() {
-        return this.request('/admin/config');
-    }
-
-    async adminUpdateConfig(data: { maintenanceMode?: boolean, goldToMaxRate?: number }) {
-        return this.request('/admin/config', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
-    }
-
     // --- WITHDRAWAL MANAGEMENT ---
 
-    async getAdminWithdrawals(page = 1, limit = 50, status?: string) {
-        const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+    async getAdminWithdrawals(status?: string) {
+        const query = new URLSearchParams();
         if (status) query.append('status', status);
         return this.request(`/admin/withdrawals?${query.toString()}`);
     }
 
-    async adminUpdateWithdrawalStatus(withdrawalId: string, status: 'COMPLETED' | 'FAILED') {
+    async adminUpdateWithdrawalStatus(withdrawalId: string, status: 'COMPLETED' | 'REJECTED') {
         return this.request(`/admin/withdrawals/${withdrawalId}/status`, {
             method: 'POST',
             body: JSON.stringify({ status })

@@ -1,4 +1,4 @@
-# ⚒️ Max Miner - $MAX W2E Platform
+# 🚀 HYIP Mini App - Premium Investment Platform
 
 ![Max Miner](client/public/logo.png)
 
@@ -46,4 +46,4 @@ Deployed via **Vercel** as a monorepo.
 
 ---
 
-**Built with Precision for the $MAX Ecosystem.**
+**Built with Precision for the Next-Gen Investors.**
