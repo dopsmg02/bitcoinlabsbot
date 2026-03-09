@@ -113,12 +113,18 @@ export const getLeaderboard = async (req: Request, res: Response): Promise<void>
             userRank = betterUsers + 1;
         }
 
-        const formatUser = (u: any) => ({
-            ...u,
-            username: u.telegramUsername ? `@${u.telegramUsername}` : `Miner_${u.id.substring(0, 4)}`,
-            goldBalance: u.goldBalance ? u.goldBalance.toString() : undefined,
-            maxBalance: u.maxBalance ? Number(u.maxBalance) : undefined,
-        });
+        const formatUser = (u: any) => {
+            let username = u.telegramUsername || `Miner_${u.id.substring(0, 4)}`;
+            if (u.telegramUsername && !username.startsWith('@')) {
+                username = `@${username}`;
+            }
+            return {
+                ...u,
+                username,
+                goldBalance: u.goldBalance ? u.goldBalance.toString() : undefined,
+                maxBalance: u.maxBalance ? Number(u.maxBalance) : undefined,
+            };
+        };
 
         res.status(200).json({
             success: true,
