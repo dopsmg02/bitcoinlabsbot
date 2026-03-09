@@ -1,6 +1,6 @@
 # 🔴 AUDIT REPORT: Technical Breakdown of Deployment Failures
 
-This document provides a deep-dive analysis of why the MaxMiner backend experienced multiple crashes and high resource usage, and serves as a post-mortem for the fixes applied.
+This document provides a deep-dive analysis of why the Bitcoin Labs backend experienced multiple crashes and high resource usage, and serves as a post-mortem for the fixes applied.
 
 ---
 

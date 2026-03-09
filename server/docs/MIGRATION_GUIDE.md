@@ -1,6 +1,6 @@
 # 🔄 MIGRATION GUIDE: Old vs. New Code Changes
 
-If you are coming from the "Old" MaxMiner code, you **MUST** apply these changes to make your backend functional and stable.
+If you are coming from the "Old" Bitcoin Labs code, you **MUST** apply these changes to make your backend functional and stable.
 
 ## 1. File Structure Changes
 **Old**: `src/services/` was empty or missing.  

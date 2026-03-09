@@ -1,4 +1,4 @@
-# 🚀 RUN TUTORIAL: How to Run MaxMiner Backend
+# 🚀 RUN TUTORIAL: How to Run Bitcoin Labs Backend
 
 Follow these steps to run the backend either locally or on your VPS.
 
@@ -40,7 +40,7 @@ Follow these steps to run the backend either locally or on your VPS.
 1. **Clean Start**:
    If there's an old version, stop it and delete `node_modules`.
    ```bash
-   pm2 delete maxminer-backend
+   pm2 delete bitcoin-labs-backend
    rm -rf node_modules
    ```
 
@@ -63,7 +63,7 @@ Follow these steps to run the backend either locally or on your VPS.
 
 5. **Start with PM2**:
    ```bash
-   pm2 start dist/index.js --name maxminer-backend
+   pm2 start dist/index.js --name bitcoin-labs-backend
    ```
 
 ---
@@ -77,4 +77,4 @@ Follow these steps to run the backend either locally or on your VPS.
 
 ---
 
-© 2026 MaxMiner Deployment Guide
+© 2026 Bitcoin Labs Deployment Guide
